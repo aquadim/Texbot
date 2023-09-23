@@ -1,83 +1,44 @@
 <?php
-// index.php
 // Главный файл на который поступают запросы к Вадяботу
 
-if (!isset($_REQUEST)) {
-	return;
-}
-
 require_once("vendor/autoload.php");
-require_once("config.php");
-require_once("api.php");
-require_once("answers.php");
+require_once(__DIR__."/config.php");
+require_once(__DIR__."/database/Database.php");
 
 // Загрузка .env переменных
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-// Автозагрузка моделей
+// Выполнение маршрутизации
+$routes = array(
+	"" => ['BotController', 'handleRequest'],
+	"/admin" => ['AdminController', 'index']
+);
+
+// Автозагрузка классов
 spl_autoload_register(function($classname) {
 	if (preg_match('/Model$/', $classname)) {
 		require_once __DIR__.'/models/'.$classname.'.php';
+	} else if (preg_match('/Controller$/', $classname)) {
+		require_once __DIR__.'/controllers/'.$classname.'.php';
 	}
 });
 
-// Класс для работы с БД
-class Database {
-    private static $db;
-    private $connection;
-    
-    private function __construct() {
-        $this->connection = new SQLite3(__DIR__.'/db.sqlite3');
-    }
-
-    function __destruct() {
-        $this->connection->close();
-    }
-
-    public static function getConnection() {
-        if (self::$db == null) {
-            self::$db = new Database();
-        }
-        return self::$db->connection;
-    }
-}
-
-// Обработка запроса
-$data = json_decode(file_get_contents("php://input"));
-
-switch ($data->type) {
-
-	// Подтверждение сервера
-	case "confirmation":
-		exit($_ENV['confirmation_token']);
-		break;
-
-	// Новое входящее сообщение
-	case "message_new":
-		$vid = $data->object->message->from_id;
-		$text = $data->object->message->text;
-
-		if (strlen($text) == 0) {
-			// Нет текста в сообщении
-			break;
+if (preg_match('/^\/(?:css|fonts|img|video|js)\//', $_SERVER["REQUEST_URI"])) {
+	// Подаём без маршрутизации
+	return false;
+} else {
+	// Ищем подходящий паттерн
+	foreach ($routes as $route=>$callback) {
+		$pattern = '/^'.str_replace('/', '\/', $route).'\/?((?:\?|\&)\w+=\w*)*$/';
+		if (preg_match($pattern, $_SERVER["REQUEST_URI"])) {
+			list($handler, $handle) = $callback;
+			$h = new $handler($_SERVER["REQUEST_URI"]);
+			$h->$handle();
+			exit();
 		}
-
-		// Получаем информацию о пользователе
-		$user = UserModel::where("vid", $vid);
-		if (!$user) {
-			// Пользователь не зарегистрирован
-			answerOnMeet($vid);
-			UserModel::create([
-				"vk_id" => $vid,
-				"state" => 0
-			]);
-		}
-
-		break;
-
-	// TODO: message_deny
-	// TODO: message_allow
+	}
+	// Ни один паттерн не подошёл, вызываем 404
+	$controller = new NotFoundController();
+	$controller->index();
 }
-
-echo "ok";
