@@ -92,7 +92,7 @@ class BotController extends Controller {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
+		//file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
 	}
 
 	// Ответ на первое взаимодействие
