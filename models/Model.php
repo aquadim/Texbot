@@ -25,7 +25,15 @@ class Model {
 			return false;
 		}
 		$stm->bindValue(":$field", $value);
-		return $stm->execute();
+		$result = $stm->execute();
+
+		// Проверяем есть ли результат
+		if ($result->fetchArray()) {
+			$result->reset();
+			return $result;
+		} else {
+			return false;
+		}
 	}
 
 	// Создаёт запись в таблице
@@ -36,7 +44,6 @@ class Model {
 		$existing_fields = array_keys($fields);
 		$field_names = implode(',', $existing_fields);
 		$field_names_prepare = ':'.implode(',:', $existing_fields);
-		//$field_names_prepare = implode(',', array_fill(0, count($fields), '?'));
 		$sql_request = "INSERT INTO ".static::$table_name." ($field_names) VALUES ($field_names_prepare)";
 		$stm = $db->prepare($sql_request);
 
@@ -46,6 +53,17 @@ class Model {
 		}
 
 		$stm->execute();
-		return $db->lastInsertRowID;
+		return $db->lastInsertRowID();
+	}
+
+	// Сохраняет данные одной строки, принимая массив одной строки
+	public static function save($object) {
+		$db = Database::getConnection();
+
+		$stm = $db->prepare(static::$update_string);
+		foreach ($object as $field=>$value) {
+			$stm->bindValue(":$field", $value);
+		}
+		$stm->execute();
 	}
 }
