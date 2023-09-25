@@ -48,6 +48,8 @@ function mailErrorReport($message, $file, $line, $trace) {
 		$report = urlencode($view->plain());
 		file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
 	}
+
+	exit("ok");
 }
 
 // Callback-функция для set_exception_handler
@@ -65,14 +67,9 @@ function reportError(int $errno, string $errstr, string $errfile, int $errline) 
 set_exception_handler("reportException");
 set_error_handler("reportError", E_ALL);
 
-function start() {
-	loaf();
-}
-start();
-
 // Выполнение маршрутизации
 $routes = array(
-	"" => ['BotController', 'handleRequest'],
+	"/" => ['BotController', 'handleRequest'],
 	"/admin" => ['AdminController', 'index']
 );
 
@@ -90,7 +87,4 @@ if (preg_match('/^\/(?:css|fonts|img|video|js)\//', $_SERVER["REQUEST_URI"])) {
 			exit();
 		}
 	}
-	// Ни один паттерн не подошёл, вызываем 404
-	$controller = new NotFoundController();
-	$controller->index();
 }
