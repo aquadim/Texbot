@@ -93,6 +93,7 @@ class BotController extends Controller {
 		);
 	}
 
+	#region Работа с API ВКонтакте
 	// Отправка сообщения пользователю ВКонтакте
 	private function sendMessageVk($vid, string $msg, string $keyboard = null, string $attachment = null) {
 		$params = array(
@@ -107,6 +108,43 @@ class BotController extends Controller {
 		file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
 	}
 
+	// Возвращает разметку кнопки клавиатуры
+	private function getKeyboardButton($label, $color, $type, $payload = null) {
+		return array(
+			"color" => $color,
+			"action" => array(
+				"type" => $type,
+				"payload" => $payload,
+				"label" => $label
+			)
+		);
+	}
+
+	// Возвращает разметку всей клавиатуры
+	private function getKeyboard($one_time, $is_inline, $buttons) {
+		return json_encode(array("one_time"=>$one_time, "inline"=>$is_inline, "buttons"=>$buttons));
+	}
+
+	#endregion
+
+	#region Генераторы клавиатур
+	// Генерирует клавиатуру выбора курса
+	private function makeKeyboardSelectCourse($msg_id, $purpose) {
+		$buttons = array(
+			array(
+				$this->getKeyboardButton("1", "primary", "callback", array("type"=>PAYLOAD_SELECT_COURSE, "purpose"=>$purpose, "num"=>1)),
+				$this->getKeyboardButton("2", "primary", "callback", array("type"=>PAYLOAD_SELECT_COURSE, "purpose"=>$purpose, "num"=>2))
+			),
+			array(
+				$this->getKeyboardButton("3", "primary", "callback", array("type"=>PAYLOAD_SELECT_COURSE, "purpose"=>$purpose, "num"=>3)),
+				$this->getKeyboardButton("4", "primary", "callback", array("type"=>PAYLOAD_SELECT_COURSE, "purpose"=>$purpose, "num"=>4))
+			)
+		);
+		return getKeyboard(true, true, $buttons);
+	}
+	#endregion
+
+	#region Ответы Техбота
 	// Показывает условия использования
 	private function answerShowTerms($vid) {
 		$this->sendMessageVk($vid, $this->responses['tos']);
@@ -126,7 +164,7 @@ class BotController extends Controller {
 
 	// Вопрос: На каком ты курсе?
 	private function answerAskCourseNumber($vid, $progress) {
-		$this->sendMessageVk($vid, sprintf($this->responses['question_what_is_your_course'], $progress), $this->keyboards['course_nums']);
+		$this->sendMessageVk($vid, sprintf($this->responses['question_what_is_your_course'], $progress), $this->makeKeyboardSelectCourse());
 	}
 
 	//~ // Вопрос: Какая из этих групп твоя?
@@ -144,10 +182,10 @@ class BotController extends Controller {
 		//~ $this->sendMessageVk($vid, $this->responses['question_can_send_messages'].format(progress), $this->keyboards['yn_text']);
 	//~ }
 
-	//~ // Неверный ввод
-	//~ private function answerWrongInput($vid) {
-		//~ $this->sendMessageVk($vid, $this->responses['wrong_input']);
-	//~ }
+	// Неверный ввод данных
+	private function answerWrongInput($vid) {
+		$this->sendMessageVk($vid, $this->responses['wrong_input']);
+	}
 
 	//~ // Добро пожаловать
 	//~ private function answerPostRegistration($vid, $user_type) {
@@ -330,13 +368,14 @@ class BotController extends Controller {
 		//~ if user_type == 1:
 			//~ $this->sendMessageVk($vid, $this->responses['updating-menu'], $this->keyboards['stud_hub'])
 
-	//~ private function answerSelectGroupCourse($vid, msg_id, purpose, edit) {
-		//~ // Отправляет сообщение с выбором курса
-		//~ keyboard = self.makeKeyboardSelectCourse(msg_id, purpose)
-		//~ if edit:
-			//~ api.edit($vid, msg_id, $this->responses['select-course'], keyboard)
-		//~ else:
-			//~ $this->sendMessageVk($vid, $this->responses['select-course'], keyboard)
+	// Отправляет сообщение с выбором курса
+	private function answerSelectGroupCourse($vid, $msg_id, $purpose, $edit) {
+		$keyboard = $this->keyboardSelectCourse($msg_id, $purpose)
+		if ($edit) {
+			$this->editMessageVk($vid, $msg_id, $this->responses['select-course'], keyboard);
+		} else {
+			$this->sendMessageVk($vid, $this->responses['select-course'], keyboard);
+		}
 
 	//~ private function answerSelectGroupSpec($vid, msg_id, course, purpose) {
 		//~ // Отправляет сообщение с выбором группы
@@ -436,6 +475,8 @@ class BotController extends Controller {
 		//~ // Отправляет файл со статистикой
 		//~ $this->sendMessageVk($vid, $this->responses['stats'], None, 'doc'+str($vid)+'_'+str(file_id))
 
+	#endregion
+
 	// Обработка обычного сообщения. Возвращает true, если необходимо обновить профиль пользователя
 	private function handlePlainMessage($text, &$user, $msg_id): bool {
 		$vid = $user['vk_id'];
@@ -481,7 +522,7 @@ class BotController extends Controller {
 				//~ $this->answerShowAdminPanel($vid);
 				//~ return true;
 			//~ return false;
-		//~ if ($user['state'] == States.void) {;
+		//~ if ($user['state'] == STATE_VOID) {;
 			//~ // Заглушка;
 			//~ return false;
 
@@ -498,7 +539,7 @@ class BotController extends Controller {
 				// Пользователь - преподаватель;
 				$user['type'] = 2;
 				$user['question_progress'] += 1;
-				$user['state'] = States.void;
+				$user['state'] = STATE_VOID;
 				$msg_id = $this->answerAskTeacherSignature($vid, $user['question_progress']);
 				$this->answerSelectTeacher($vid, $msg_id + 1, Purposes.registration);
 				return true;
@@ -509,18 +550,18 @@ class BotController extends Controller {
 			};
 		};
 		
-		//~ if ($user['state'] == States.select_course) {;
-			//~ // После "На каком ты курсе?" при регистрации;
-			//~ if (not ($text.isdigit() and 1 <= int($text) <= 4)) {;
-				//~ $this->answerWrongInput($vid);
-				//~ return false;
-;
-			//~ $user['state'] = States.void;
-			//~ $user['question_progress'] += 1;
-;
-			//~ $this->answerAskStudentGroup($vid, $user['question_progress'], $text);
-;
-			//~ return true;
+		if ($user['state'] == STATE_SELECT_COURSE) {;
+			// После "На каком ты курсе?" при регистрации;
+			if (!(is_numeric($text) || 1 <= intval($text) <= 4)) {;
+				$this->answerWrongInput($vid);
+				return false;
+//~ ;
+			$user['state'] = STATE_VOID;
+			$user['question_progress'] += 1;
+//~ ;
+			$this->answerAskStudentGroup($vid, $user['question_progress'], $text);
+//~ ;
+			return true;
 ;
 		//~ if ($user['state'] == States.reg_can_send) {;
 			//~ // После "Можно ли отправлять сообщения?" при регистрации;
@@ -673,6 +714,7 @@ class BotController extends Controller {
 					UserModel::save($user);
 				}
 
+			// TODO: message_event
 			// TODO: message_deny
 			// TODO: message_allow
 		}
