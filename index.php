@@ -1,27 +1,8 @@
 <?php
 // Главный файл на который поступают запросы к Вадяботу
-
-require_once("vendor/autoload.php");
 require_once(__DIR__."/config.php");
-require_once(__DIR__."/database/Database.php");
-
-// Автозагрузка классов
-spl_autoload_register(function($classname) {
-	if (preg_match('/Model$/', $classname)) {
-		require_once __DIR__.'/models/'.$classname.'.php';
-	} else if (preg_match('/Controller$/', $classname)) {
-		require_once __DIR__.'/controllers/'.$classname.'.php';
-	} else if (preg_match('/View$/', $classname)) {
-		require_once __DIR__.'/views/'.$classname.'.php';
-	}
-});
-
-// Загрузка .env переменных
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
 
 // Обработка ошибок //
-
 // Отправляет отчёт об ошибке на почту
 // TODO: сделать сохранение ошибки в админку
 // TODO: отправить сообщение пользователю что произошла ошибка
@@ -48,7 +29,6 @@ function mailErrorReport($message, $file, $line, $trace) {
 		$report = urlencode($view->plain());
 		file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
 	}
-
 	exit("ok");
 }
 

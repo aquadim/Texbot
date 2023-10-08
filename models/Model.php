@@ -1,13 +1,15 @@
 <?php
+// Родительский класс моделей
 class Model {
 	protected static $table_name;
 
 	// Возвращает одну запись, найденную по id
 	public static function getById($id) {
 		$db = Database::getConnection();
-		$stm = $db->prepare("SELECT * FROM ".static::$table_name." WHERE id=:id");
-		$stm->bindValue(":id", $id, SQLITE3_INTEGER);
-		return $stm->execute()->fetchArray();
+		$stm = $db->prepare("SELECT * FROM ".static::$table_name." WHERE id=?");
+		$stm->bind_param("i", $id);
+		$stm->execute();
+		return $stm->get_result();
 	}
 
 	// Собирает все записи из таблицы

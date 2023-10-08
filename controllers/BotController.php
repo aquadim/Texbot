@@ -370,12 +370,13 @@ class BotController extends Controller {
 
 	// Отправляет сообщение с выбором курса
 	private function answerSelectGroupCourse($vid, $msg_id, $purpose, $edit) {
-		$keyboard = $this->keyboardSelectCourse($msg_id, $purpose)
+		$keyboard = $this->keyboardSelectCourse($msg_id, $purpose);
 		if ($edit) {
 			$this->editMessageVk($vid, $msg_id, $this->responses['select-course'], keyboard);
 		} else {
 			$this->sendMessageVk($vid, $this->responses['select-course'], keyboard);
 		}
+	}
 
 	//~ private function answerSelectGroupSpec($vid, msg_id, course, purpose) {
 		//~ // Отправляет сообщение с выбором группы
@@ -548,21 +549,20 @@ class BotController extends Controller {
 				$this->answerWrongInput($vid);
 				return false;
 			};
-		};
+		}
 		
-		if ($user['state'] == STATE_SELECT_COURSE) {;
+		if ($user['state'] == STATE_SELECT_COURSE) {
 			// После "На каком ты курсе?" при регистрации;
-			if (!(is_numeric($text) || 1 <= intval($text) <= 4)) {;
+			if (!(is_numeric($text) && 1 <= intval($text) && intval($text) < 5)) {
 				$this->answerWrongInput($vid);
 				return false;
-//~ ;
+			}
 			$user['state'] = STATE_VOID;
 			$user['question_progress'] += 1;
-//~ ;
 			$this->answerAskStudentGroup($vid, $user['question_progress'], $text);
-//~ ;
 			return true;
-;
+		}
+		
 		//~ if ($user['state'] == States.reg_can_send) {;
 			//~ // После "Можно ли отправлять сообщения?" при регистрации;
 			//~ if ($text == 'Да') {;
@@ -572,11 +572,9 @@ class BotController extends Controller {
 			//~ else { {;
 				//~ $this->answerWrongInput($vid);
 				//~ return false;
-;
 			//~ $user['state'] = States.hub;
 			//~ $this->answerPostRegistration($vid, $user['type']);
 			//~ return true;
-;
 		//~ if ($user['state'] == States.enter_login or $user['state'] == States.enter_login_after_profile) {;
 			//~ // Ввод логина;
 			//~ if ($this->checkIfCancelled($text, $user)) {;
