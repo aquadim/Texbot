@@ -258,7 +258,7 @@ foreach($dates as $date) {
 				}
 
 				// Создание записи расписания
-				//$schedule_id = ScheduleModel::create($group['id'], date("Y-m-d", $date));
+				$schedule_id = ScheduleModel::create($group['id'], date("Y-m-d", $date));
 
 				// Парсинг пар группы
 				$group_y = $y;
@@ -273,10 +273,12 @@ foreach($dates as $date) {
 					// Пустая яйчейка
 					if (strlen($pair_name) < 3) continue;
 					
-					$teacher = $data[$group_y + 1][$x * 2 + 1];
+					$teacher_data = $data[$group_y + 1][$x * 2 + 1];
 
-					displayMessage("Время: ".$time." Пара: ".$pair_name." Препод: ".$teacher);
-					PairsModel::create($time, $pair_name, $teacher);
+					$pair_id = PairModel::create($schedule_id, $time, $pair_name);
+					PairPlaceModel::create($pair_id, $teacher_data);
+					
+					displayMessage("Время: ".$time." Пара: ".$pair_name." Препод: ".$teacher_data);
 				}
 			}
 		}

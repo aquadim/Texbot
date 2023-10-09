@@ -17,15 +17,4 @@ class Model {
 		$db = Database::getConnection();
 		return $db->query("SELECT * FROM ".static::$table_name);
 	}
-
-	// Сохраняет данные одной строки, принимая массив одной строки
-	public static function save($object) {
-		$db = Database::getConnection();
-
-		$stm = $db->prepare(static::$update_string);
-		foreach ($object as $field=>$value) {
-			$stm->bindValue(":$field", $value);
-		}
-		$stm->execute();
-	}
 }

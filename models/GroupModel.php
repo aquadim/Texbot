@@ -1,8 +1,14 @@
 <?php
+// Модель групп техникума
+/*
+ * course - Курс группы
+ * name - Шифр специальности группы
+ */
+
 class GroupModel extends Model {
 	protected static $table_name = "groups";
 
-	// Возвращает данные группы по курсу и названию (например: $course=3, $name=ИС)
+	// Возвращает данные группы по курсу и специальности
 	public static function getByParams($course, $name) {
 		$db = Database::getConnection();
 		$stm = $db->prepare("SELECT * FROM groups WHERE course=? AND spec=?");
