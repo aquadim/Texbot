@@ -6,10 +6,6 @@
 
 require_once(__DIR__."/config.php");
 
-$group = GroupModel::getById(1);
-var_dump($group);
-exit();
-
 // Определения цветов для функции displayMessage
 if (php_sapi_name() == "cli") { // Скрипт запущен через консоль
 	define("COLOR_DEFAULT", "\033[93m");
@@ -29,7 +25,7 @@ if (php_sapi_name() == "cli") { // Скрипт запущен через кон
 	<!DOCTYPE html>
 	<html>
 		<head>
-			<style>html{background-color:#222222}</style>
+			<style>html{background-color:#222222}table,tr,td{border:1px solid silver;border-collapse:collapse;color:silver;padding:0.2em}</style>
 		</head>
 		<body>
 		<pre><?php
@@ -57,7 +53,6 @@ function getTextFromRun($element) {
 // Возвращает true если данная $string - название группы
 // Строка - название группы, если первый символ - число, а число слов - именно два
 function isGroupName($string) {
-	displayMessage($string);
 	$parts = explode(" ", $string);
 	if (count($parts) != 2) {
 		return false;
@@ -123,8 +118,7 @@ foreach ($phpWord->getSections() as $section) {
  * 2. Первые два слова - расписание занятий (в любом регистре)
  * 3. В тексте должен присутствовать месяц в родительном падеже (октября, ноября, декабря, ...)
  * 4. Перед месяцем должно присутствовать слово. Это слово обязано содержать только цифры т.к. это число месяца
- * 5. В тексте должно присутствовать название какого-либо дня недели.
-*/
+ * 5. В тексте должно присутствовать название какого-либо дня недели. */
 displayMessage("\n===Проверка дат расписаний===");
 $dates = array();
 $month_names = array("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря");
@@ -221,10 +215,22 @@ foreach($dates as $date) {
 			foreach ($cell->getElements() as $element) {
 				$celltext .= getTextFromRun($element);
 			}
-			$datarow[] = trim($celltext);
+			$datarow[] = trim($celltext, "\xC2\xA0\n ");
         }
         $data[] = $datarow;
     }
+
+	//~ echo "</pre>";
+    //~ echo "<table>";
+    //~ foreach ($data as $row) {
+		//~ echo "<tr>";
+		//~ foreach ($row as $cell) {
+			//~ echo "<td>".$cell."</td>";
+		//~ }
+		//~ echo "</tr>";
+	//~ }
+    //~ echo "</table>";
+    //~ echo "<pre>";
 
     // Настоящий парсинг таблицы
     $dataheight = count($data);
@@ -234,8 +240,44 @@ foreach($dates as $date) {
     for ($y = 0; $y < $dataheight; $y++) {
 		if (isGroupName($data[$y][0]) == true) {
 			// Эта яйчейка - название группы. Значит справа от неё есть другие названия, а снизу - пары этой группы
-			for ($x = 0; $x < $datawidth; $x++) { // Проходит все названия групп в строке
-				GroupModel::where();
+			for ($x = 0; $x < $datawidth; $x+=1) { // Проходит все названия групп в строке
+				$group_parts = explode(" ", $data[$y][$x]);
+
+				if (count($group_parts) === 2) {
+					$group = GroupModel::getByParams(intval($group_parts[0]), $group_parts[1]);
+				} else {
+					/* Возможны ошибки в названиях групп или случаи, когда первый столбец имеет группу, а
+					 * остальные нет. Такие столбцы не парсятся, а просто пропускаются */
+					continue;
+				}
+
+				if ($group == false) {
+					displayMessage("Неопознанная группа: ".$data[$y][$x], COLOR_RED);
+				} else {
+					displayMessage("Группа: ".$data[$y][$x], COLOR_GREEN);
+				}
+
+				// Создание записи расписания
+				//$schedule_id = ScheduleModel::create($group['id'], date("Y-m-d", $date));
+
+				// Парсинг пар группы
+				$group_y = $y;
+				while ($group_y + 1 < $dataheight && isGroupName($data[$group_y + 1][$x]) == false) {
+					$group_y++;
+
+					$time = $data[$group_y][$x * 2];
+					// Пустая яйчейка
+					if (strlen($time) < 2) continue;
+
+					$pair_name = $data[$group_y][$x * 2 + 1];
+					// Пустая яйчейка
+					if (strlen($pair_name) < 3) continue;
+					
+					$teacher = $data[$group_y + 1][$x * 2 + 1];
+
+					displayMessage("Время: ".$time." Пара: ".$pair_name." Препод: ".$teacher);
+					PairsModel::create($time, $pair_name, $teacher);
+				}
 			}
 		}
 	}
