@@ -18,9 +18,13 @@ class PairPlaceModel extends Model {
 		$places = explode('/', $teacher_data);
 		foreach ($places as $place) {
 			// Разделяем $place пробелом
-			list($teacher_surname, $location) = explode(" ", $place);
+			$parts = explode(" ", $place);
+			$teacher_surname = $parts[0];
+			if (count($parts) == 2) {
+				$location = $parts[1];
+			}
 			$teacher = TeacherModel::getBySurname($teacher_surname);
-			if ($teacher == false) { // Преподаватель не найден
+			if ($teacher == false) { // Преподаватель не найден. TODO: Добавить уведомление об этом?
 				$teacher_id = null;
 			} else {
 				$teacher_id = $teacher['id'];
