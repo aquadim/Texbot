@@ -15,9 +15,13 @@ class PairModel extends Model {
 		// Получаем название пары
 		$pair_name_id = PairNamesModel::getByName($pair_name);
 
+		// Форматируем time
+		$datetimeobj = date_create_from_format("!G.i", $time);
+		$timestring = $datetimeobj->format("H:i");
+
 		// Создём пару
 		$insert_pair_stm = $db->prepare("INSERT INTO pairs (schedule_id, ptime, name) VALUES(?, ?, ?)");
-		$insert_pair_stm->bind_param("isi", $schedule_id, $time, $pair_name_id);
+		$insert_pair_stm->bind_param("isi", $schedule_id, $timestring, $pair_name_id);
 		$insert_pair_stm->execute();
 		return $insert_pair_stm->insert_id;
 	}
