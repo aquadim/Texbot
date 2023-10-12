@@ -8,7 +8,7 @@ require_once(__DIR__."/config.php");
 
 // Определения цветов для функции displayMessage
 if (php_sapi_name() == "cli") { // Скрипт запущен через консоль
-	define("COLOR_DEFAULT", "\033[93m");
+	define("COLOR_DEFAULT", "");
 	define("COLOR_YELLOW", "\033[93m");
 	define("COLOR_RED", "\033[91m");
 	define("COLOR_GREEN", "\033[92m");
@@ -122,7 +122,7 @@ foreach ($phpWord->getSections() as $section) {
 displayMessage("\n===Проверка дат расписаний===");
 $dates = array();
 $month_names = array("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря");
-$weekday_names = array("понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье");
+$weekday_names = array("понедельник", "вторник", "среду", "четверг", "пятницу", "субботу", "воскресенье");
 
 foreach ($textruns as $text) {
 	$words = explode(" ", $text);
@@ -220,18 +220,6 @@ foreach($dates as $date) {
         $data[] = $datarow;
     }
 
-	//~ echo "</pre>";
-    //~ echo "<table>";
-    //~ foreach ($data as $row) {
-		//~ echo "<tr>";
-		//~ foreach ($row as $cell) {
-			//~ echo "<td>".$cell."</td>";
-		//~ }
-		//~ echo "</tr>";
-	//~ }
-    //~ echo "</table>";
-    //~ echo "<pre>";
-
     // Настоящий парсинг таблицы
     $dataheight = count($data);
     $datawidth = count($data[0]);
@@ -253,8 +241,7 @@ foreach($dates as $date) {
 
 				if ($group == false) {
 					displayMessage("Неопознанная группа: ".$data[$y][$x], COLOR_RED);
-				} else {
-					displayMessage("Группа: ".$data[$y][$x], COLOR_GREEN);
+					continue;
 				}
 
 				// Создание записи расписания
@@ -277,8 +264,6 @@ foreach($dates as $date) {
 
 					$pair_id = PairModel::create($schedule_id, $time, $pair_name);
 					PairPlaceModel::create($pair_id, $teacher_data);
-					
-					displayMessage("Время: ".$time." Пара: ".$pair_name." Препод: ".$teacher_data);
 				}
 			}
 		}
