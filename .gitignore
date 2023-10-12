@@ -2,9 +2,7 @@ rasp2.docx
 tunnel.sh
 test.php
 .env
-vendor/*
-composer.json
-composer.lock
+vendor
 Texbot.geany
 db.sqlite3
 db.sqlite3-shm

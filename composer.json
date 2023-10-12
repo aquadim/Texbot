@@ -1,0 +1,6 @@
+{
+    "require": {
+        "vlucas/phpdotenv": "^5.5",
+        "phpoffice/phpword": "^1.1"
+    }
+}
