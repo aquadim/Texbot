@@ -159,7 +159,7 @@ class BotController extends Controller {
 
 	// Вопрос: Ты студент?
 	private function answerAskIfStudent($vid, $progress) {
-		$this->sendMessageVk($vid, $this->responses['question_are_you_student'].format(progress), $this->keyboards['yn_text']);
+		$this->sendMessageVk($vid, sprintf($this->responses['question_are_you_student'], $progress), $this->keyboards['yn_text']);
 	}
 
 	// Вопрос: На каком ты курсе?
