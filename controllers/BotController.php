@@ -666,6 +666,8 @@ class BotController extends Controller {
 	public function handleRequest() {
 		$data = json_decode(file_get_contents("php://input"));
 
+		// TODO: добавить проверку строки secret
+
 		switch ($data->type) {
 
 			// Подтверждение сервера
@@ -685,14 +687,11 @@ class BotController extends Controller {
 				}
 
 				// Получаем информацию о пользователе
-				$user = UserModel::where("vk_id", $vid);
+				$user = UserModel::getByVkId("vk_id", $vid);
 				if (!$user) {
 					// Пользователь не зарегистрирован, создаём его
 					$this->answerOnMeet($vid);
-					UserModel::create([
-						"vk_id" => $vid,
-						"state" => 0
-					]);
+					UserModel::create($vid);
 					break;
 				}
 
@@ -717,6 +716,6 @@ class BotController extends Controller {
 			// TODO: message_allow
 		}
 
-		echo "ok";
+		exit("ok");
 	}
 }
