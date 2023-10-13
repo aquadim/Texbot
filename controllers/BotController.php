@@ -714,7 +714,7 @@ class BotController extends Controller {
 
 	// Обработка запроса
 	public function handleRequest() {
-		switch ($data->type) {
+		switch ($this->data->type) {
 
 			// Подтверждение сервера
 			case "confirmation":
@@ -723,9 +723,8 @@ class BotController extends Controller {
 
 			// Новое входящее сообщение
 			case "message_new":
-				$vid = $data->object->message->from_id;
-				$text = $data->object->message->text;
-				$msg_id = $data->object->message->id;
+				$text = $this->data->object->message->text;
+				$msg_id = $this->data->object->message->id;
 
 				if (strlen($text) == 0) {
 					// Нет текста в сообщении
@@ -733,11 +732,11 @@ class BotController extends Controller {
 				}
 
 				// Получаем информацию о пользователе
-				$user = UserModel::getByVkId("vk_id", $vid);
+				$user = UserModel::getByVkId("vk_id", $this->vid);
 				if (!$user) {
 					// Пользователь не зарегистрирован, создаём его
-					$this->answerOnMeet($vid);
-					UserModel::create($vid);
+					$this->answerOnMeet($this->vid);
+					UserModel::create($this->vid);
 					break;
 				}
 

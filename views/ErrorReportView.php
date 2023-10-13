@@ -11,7 +11,7 @@ class ErrorReportView extends View {
 	// Возвращает строку для отправки уведомления в телеграм
 	public function plain():string {
 		$output = "<pre>Произошла ошибка в Техботе</pre>\n";
-		$output .= "<b>Пользователь у которого появилась ошибка: </b> https://vk.com/id".$this->vid;
+		$output .= "<b>Пользователь у которого появилась ошибка: </b> https://vk.com/id".$this->vid."\n";
 		$output .= "<b>Сообщение ошибки: </b> ".$this->message."\n";
 		$output .= "<b>Файл: </b> ".$this->file."\n";
 		$output .= "<b>Строка: </b> ".$this->line."\n";
