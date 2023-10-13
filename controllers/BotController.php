@@ -490,7 +490,7 @@ class BotController extends Controller {
 
 	# region Обработка ошибок
 	// Функция обработки ошибок
-	private function mailErrorReport($message, $file, $line, $trace) {
+	public function mailErrorReport($message, $file, $line, $trace) {
 		$view = new ErrorReportView([
 			"message" => $message,
 			"file" => $file,
@@ -515,10 +515,10 @@ class BotController extends Controller {
 			file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
 		}
 		exit("ok");
-}
+	}
 
 	// Callback-функция для set_exception_handler
-	private function reportException(Throwable $e) {
+	public function reportException(Throwable $e) {
 		$this->mailErrorReport($e->getMessage(), $e->getFile(), $e->getLine(), $e->getTrace());
 	}
 
@@ -732,7 +732,7 @@ class BotController extends Controller {
 				}
 
 				// Получаем информацию о пользователе
-				$user = UserModel::getByVkId("vk_id", $this->vid);
+				$user = UserModel::getByVkId($this->vid);
 				if (!$user) {
 					// Пользователь не зарегистрирован, создаём его
 					$this->answerOnMeet($this->vid);
