@@ -8,7 +8,7 @@ $routes = array(
 	"/admin" => ['AdminController', 'index']
 );
 
-if (preg_match('/^\/(?:css|fonts|img|video|js)\//', $_SERVER["REQUEST_URI"])) {
+if (preg_match('/^\/(?:css|fonts|img|js)\//', $_SERVER["REQUEST_URI"])) {
 	// Подаём без маршрутизации
 	return false;
 } else {

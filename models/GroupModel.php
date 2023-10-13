@@ -16,4 +16,13 @@ class GroupModel extends Model {
 		$stm->execute();
 		return $stm->get_result()->fetch_array();
 	}
+
+	// Возвращает все группы по заданному курсу
+	public static function getAllByCourse($course) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("SELECT * FROM groups WHERE course=?");
+		$stm->bind_param("i", $course);
+		$stm->execute();
+		return $stm->get_result();
+	}
 }

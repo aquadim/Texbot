@@ -19,4 +19,25 @@ class UserModel extends Model {
 		$stm->execute();
 		return $stm->insert_id;
 	}
+
+	// Сохранение данных пользователя
+	public static function save($user) : void {
+		$db = Database::getConnection();
+		$stm = $db->prepare("
+			UPDATE users
+			SET state=?, type=?, question_progress=?, allows_mail=?, gid=?, journal_login=?, journal_password=?, teacher_id=?"
+		);
+		$stm->bind_param(
+			"iiiiissi",
+			$user['state'],
+			$user['type'],
+			$user['question_progress'],
+			$user['allows_mail'],
+			$user['gid'],
+			$user['journal_login'],
+			$user['journal_password'],
+			$user['teacher_id']
+		);
+		$stm->execute();
+	}
 }
