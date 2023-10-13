@@ -2,51 +2,6 @@
 // Главный файл на который поступают запросы к Вадяботу
 require_once(__DIR__."/config.php");
 
-// Обработка ошибок //
-// Отправляет отчёт об ошибке на почту
-// TODO: сделать сохранение ошибки в админку
-// TODO: отправить сообщение пользователю что произошла ошибка
-function mailErrorReport($message, $file, $line, $trace) {
-	$view = new ErrorReportView([
-		"message" => $message,
-		"file" => $file,
-		"line" => $line,
-		"trace" => $trace
-	]);
-
-	if ($_ENV["notifications_type"] == "email") {
-		// email
-		$report = $view->render();
-		
-	    $headers = "MIME-Version: 1.0\n";
-	    $headers .= "From: Техбот <{$_ENV['notifier_email']}>\n";
-	    $headers .= "Content-type: text/html; charset=utf-8\n";
-	
-		mail($_ENV["webmaster_email"], "Ошибка в Техботе", $report, $headers);
-
-	} else if ($_ENV["notifications_type"] == "telegram") {
-		// telegram
-		$report = urlencode($view->plain());
-		file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
-	}
-	exit("ok");
-}
-
-// Callback-функция для set_exception_handler
-function reportException(Throwable $e) {
-	mailErrorReport($e->getMessage(), $e->getFile(), $e->getLine(), $e->getTrace());
-	return true;
-}
-
-// Callback-функция для set_error_handler
-function reportError(int $errno, string $errstr, string $errfile, int $errline) {
-	mailErrorReport($errstr, $errfile, $errline, null);
-	exit();
-}
-
-set_exception_handler("reportException");
-set_error_handler("reportError", E_ALL);
-
 // Выполнение маршрутизации
 $routes = array(
 	"/" => ['BotController', 'handleRequest'],

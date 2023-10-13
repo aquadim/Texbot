@@ -2,17 +2,19 @@
 // Отчёт об ошибке
 
 class ErrorReportView extends View {
-	public $message;
-	public $file;
-	public $line;
-	public $trace;
+	protected $message;
+	protected $file;
+	protected $line;
+	protected $trace;
+	protected $vid;
 
 	// Возвращает строку для отправки уведомления в телеграм
 	public function plain():string {
 		$output = "<pre>Произошла ошибка в Техботе</pre>\n";
-		$output .= "<b>Сообщение ошибки: </b> {$this->message}\n";
-		$output .= "<b>Файл: </b> {$this->file}\n";
-		$output .= "<b>Строка: </b> {$this->line}\n";
+		$output .= "<b>Пользователь у которого появилась ошибка: </b> https://vk.com/id".$this->vid;
+		$output .= "<b>Сообщение ошибки: </b> ".$this->message."\n";
+		$output .= "<b>Файл: </b> ".$this->file."\n";
+		$output .= "<b>Строка: </b> ".$this->line."\n";
 
 		// Трассировка ошибки
 		if (isset($this->trace) && count($this->trace) > 0) {

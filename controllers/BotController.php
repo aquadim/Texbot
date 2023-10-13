@@ -15,9 +15,11 @@ define('ENTER_CAB', 9);						// Ввод кабинета
 
 class BotController extends Controller {
 
-	private $responses;
-	private $wait_responses;
-	private $keyboards;
+	private $responses; // Все сообщения бота
+	private $wait_responses; // Сообщения с просьбой подождать
+	private $keyboards; // Клавиатуры
+	private $data; // Данные запроса от ВК
+	private $vid; // ID ВК пользователя по запросу которого выполняется обработка
 
 	public function __construct(string $request_uri) {
 		parent::__construct($request_uri);
@@ -91,6 +93,15 @@ class BotController extends Controller {
 			"empty"=> '{"one_time":false,"inline":false,"buttons":[]}',
 			"admin-hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Рассылка"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Статистика"}},{"color":"negative","action":{"type":"text","payload":null,"label":"Выход"}}]]}'
 		);
+
+		// Определяем данные запроса TODO: добавить проверку строки secret
+		$this->data = json_decode(file_get_contents("php://input"));
+		if ($this->data->type == "message_new") {
+			$this->vid = $this->data->object->message->from_id;
+		}
+
+		set_exception_handler(array($this, "reportException"));
+		set_error_handler(array($this, "reportError"), E_ALL);
 	}
 
 	#region Работа с API ВКонтакте
@@ -124,7 +135,6 @@ class BotController extends Controller {
 	private function getKeyboard($one_time, $is_inline, $buttons) {
 		return json_encode(array("one_time"=>$one_time, "inline"=>$is_inline, "buttons"=>$buttons));
 	}
-
 	#endregion
 
 	#region Генераторы клавиатур
@@ -478,6 +488,46 @@ class BotController extends Controller {
 
 	#endregion
 
+	# region Обработка ошибок
+	// Функция обработки ошибок
+	private function mailErrorReport($message, $file, $line, $trace) {
+		$view = new ErrorReportView([
+			"message" => $message,
+			"file" => $file,
+			"line" => $line,
+			"trace" => $trace,
+			"vid" => $this->vid
+		]);
+
+		if ($_ENV["notifications_type"] == "email") {
+			// email
+			$report = $view->render();
+			
+			$headers = "MIME-Version: 1.0\n";
+			$headers .= "From: Техбот <{$_ENV['notifier_email']}>\n";
+			$headers .= "Content-type: text/html; charset=utf-8\n";
+		
+			mail($_ENV["webmaster_email"], "Ошибка в Техботе", $report, $headers);
+
+		} else if ($_ENV["notifications_type"] == "telegram") {
+			// telegram
+			$report = urlencode($view->plain());
+			file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
+		}
+		exit("ok");
+}
+
+	// Callback-функция для set_exception_handler
+	private function reportException(Throwable $e) {
+		$this->mailErrorReport($e->getMessage(), $e->getFile(), $e->getLine(), $e->getTrace());
+	}
+
+	// Callback-функция для set_error_handler
+	private function reportError(int $errno, string $errstr, string $errfile, int $errline) {
+		$this->mailErrorReport($errstr, $errfile, $errline, null);
+	}
+	#endregion
+
 	// Обработка обычного сообщения. Возвращает true, если необходимо обновить профиль пользователя
 	private function handlePlainMessage($text, &$user, $msg_id): bool {
 		$vid = $user['vk_id'];
@@ -664,10 +714,6 @@ class BotController extends Controller {
 
 	// Обработка запроса
 	public function handleRequest() {
-		$data = json_decode(file_get_contents("php://input"));
-
-		// TODO: добавить проверку строки secret
-
 		switch ($data->type) {
 
 			// Подтверждение сервера
