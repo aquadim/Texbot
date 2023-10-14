@@ -34,4 +34,19 @@ class ScheduleModel extends Model {
 		$stm->execute();
 		return $stm->insert_id;
 	}
+
+	// Возвращает актуальные ДАТЫ РАСПИСАНИЙ
+	public static function getRelevantDates() : mysqli_result {
+		$db = Database::getConnection();
+		return $db->query("SELECT DISTINCT day FROM schedules WHERE day BETWEEN CURRENT_DATE AND CURRENT_DATE + 1");
+	}
+
+	// Возвращает данные для определённой группы и даты
+	public static function getForGroup($date, $group) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("SELECT id, photo_id FROM schedules WHERE day=? AND gid=?");
+		$stm->bind_param('si', $date, $group);
+		$stm->execute();
+		return $stm->get_result()->fetch_array();
+	}
 }

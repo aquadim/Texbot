@@ -65,7 +65,7 @@ function isGroupName($string) {
 
 #region Считывание информации
 // Загрузка файла расписания
-$phpWord = \PhpOffice\PhpWord\IOFactory::load('rasp2.docx');
+$phpWord = \PhpOffice\PhpWord\IOFactory::load('/tmp/schedule.docx');
 
 // Считывание всей информации документа
 $tables = array();
@@ -184,7 +184,7 @@ foreach ($textruns as $text) {
 		$hour = 0,
 		$minute = 0,
 		$second = 0,
-		$month = $month_id,
+		$month = $month_id + 1,
 		$day = $words[$month_word_index - 1],
 	);
 }

@@ -33,6 +33,9 @@ define('INTENT_EDIT_STUDENT', 3);		// Изменение для студента
 define('INTENT_VIEW_CABINETS', 4); 		// Просмотр занятости кабинетов
 define('INTENT_EDIT_TYPE', 5); 			// Изменение типа профиля
 
+// Нумерация функций для статистики
+define('FUNC_RASP', 0); // Расписание
+
 class BotController extends Controller {
 
 	private $responses; // Все сообщения бота
@@ -67,7 +70,7 @@ class BotController extends Controller {
 			"select-teacher"=> "Выбери преподавателя (стр. {0}/{1})",
 			"select-course"=> "Выбери курс группы",
 			"select-group"=> "Выбери специальность группы",
-			"no-data"=> "(нет данных)",
+			"no-data"=> "❌ Нет данных",
 			"bells-schedule"=> "Звонки в понедельник:\n1 пара: 8:00 - 9:35 (перерыв в 8:45)\n2 пара: 9:45 - 11:20 (перерыв в 10:30)\nКл час: 11:30 - 12:15\nОбед: 12:15-13:00\n3 пара: 13:00 - 14:35 (перерыв в 13:45)\n4 пара: 14:45 - 16:20 (перерыв в 15:30)\n5 пара: 16:30 - 18:05 (перерыв в 17:15).\n\nЗвонки со вторника по пятницу\n1 пара: 8:00 - 9:35 (перерыв в 8:45)\n2 пара: 9:45 - 11:20 (перерыв в 10:30)\nОбед: 11:20 - 12:20\n3 пара: 12:20 - 13:55 (перерыв в 13:05)\n4 пара: 14:05 - 15:40 (перерыв в 14:50)\n5 пара: 15:50 - 17:25 (перерыв в 16:35)\n\nЗвонки в субботу\n1 пара: 8:00 - 9:25 (перерыв в 8:40)\n2 пара: 09:35 - 11:00 (перерыв в 10:15)\n3 пара: 11:10 - 12:35 (перерыв в 11:50)\n4 пара: 12:45 - 14:10 (перерыв в 13:25)",
 			"profile-identifier-student"=> "👥 Ваша группа: {0}",
 			"profile-identifier-teacher"=> "👤 Ваша фамилия: {0}",
@@ -85,23 +88,21 @@ class BotController extends Controller {
 			"mail-saved"=> "Данные рассылки сохранены, затронуто пользователей: {0}",
 			"mail-disabled"=> "Больше не потревожу! Если снова захочешь получать рассылки - то включить их можно в меню профиля",
 			"stats"=> "Вот HTML разметка, позволющая просмотреть статистику",
-			"no-data"=> "(Нет данных)",
-			"exception"=> "Произошла ошибка! Текст ошибки: {0}. Разработчик уведомлён"
 		);
 
 		$this->wait_responses = array(
-			"Подожди",
-			"Подожди немного",
-			"Секунду",
-			"Будет сделано!",
-			"Рисую картинку...",
-			"Собираю данные...",
-			"Запрос принят",
-			"Уже работаю над этим"
+			"🕓 Подожди",
+			"🕓 Подожди немного",
+			"🕓 Секунду",
+			"🕓 Будет сделано!",
+			"🕓 Рисую картинку...",
+			"🕓 Собираю данные...",
+			"🕓 Запрос принят",
+			"🕓 Уже работаю над этим"
 		);
 
 		$this->keyboards = array(
-			"yn_text"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Да"}},{"color":"negative","action":{"type":"text","payload":null,"label":"Нет"}}]]}',
+			"yn_text"=> '{"one_time":true,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Да"}},{"color":"negative","action":{"type":"text","payload":null,"label":"Нет"}}]]}',
 			"cancel"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"negative","action":{"type":"text","payload":null,"label":"Отмена"}}]]}',
 			"to-hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"На главную"}}]]}',
 			"course_nums"=> '{"one_time":true,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"1"}},{"color":"primary","action":{"type":"text","payload":null,"label":"2"}}],[{"color":"primary","action":{"type":"text","payload":null,"label":"3"}},{"color":"primary","action":{"type":"text","payload":null,"label":"4"}}]]}',
@@ -160,6 +161,18 @@ class BotController extends Controller {
 			"v" => "5.131"
 		);
 		file_get_contents(vk_api_endpoint."messages.edit?".http_build_query($params));
+	}
+
+	// Отправляет ответ на callback-запрос пользователя
+	private function answerCallbackVk() : void {
+		$params = array(
+			"event_id" => $this->data->event_id,
+			"user_id" => $this->data->object->user_id,
+			"peer_id" => $this->data->object->peer_id,
+			"access_token" => $_ENV['vk_token'],
+			"v" => "5.131"
+		);
+		file_get_contents(vk_api_endpoint."messages.sendMessageEventAnswer?".http_build_query($params));
 	}
 
 	// Возвращает разметку кнопки клавиатуры
@@ -221,6 +234,40 @@ class BotController extends Controller {
 		}
 		return $this->getKeyboard(true, true, $buttons);
 	}
+
+	// Возвращает клавиатуру выбора даты
+	private function makeKeyboardSelectRelevantDate($intent, $target) {
+		$relevant_dates = ScheduleModel::getRelevantDates();
+		if ($relevant_dates->num_rows == 0) {
+			return false;
+		}
+
+		// Строки на сегодня и на завтра
+		$date_today = date('Y-m-d');
+		$date_tomorrow = date('Y-m-d', time() + 86400);
+
+		$buttons = array();
+		while ($date = $relevant_dates->fetch_array()) {
+			// Создаём надпись
+			if ($date['day'] == $date_today) {
+				$label = 'Сегодня';
+			} else if ($date['day'] == $date_tomorrow) {
+				$label = 'Завтра';
+			} else {
+				$parts = explode('-', $date['day']);
+				$label = $parts[2].' '.$GEN_MONTH_NUM_TO_STR[$parts[1]];
+			}
+
+			$buttons[] = array($this->getKeyboardButton(
+				$label,
+				'primary',
+				'callback',
+				array('type'=>PAYLOAD_SELECT_DATE, 'intent'=>$intent, 'target'=>$target, 'date'=>$date['day'])
+			));
+		}
+
+		return $this->getKeyboard(false, true, $buttons);
+	}
 	#endregion
 
 	#region Ответы Техбота
@@ -250,103 +297,90 @@ class BotController extends Controller {
 		);
 	}
 
-	//~ // Вопрос: Какая из этих групп твоя?
-	//~ private function answerAskStudentGroup($vid, $progress, $course) {
-		//~ group_names = database.getGroupsByCourse(course);
-		//~ $this->sendMessageVk(
-			//~ $vid,
-			//~ $this->responses['question_what_is_your_group'].format(progress),
-			//~ self.makeKeyboardSelectGroup(group_names, None, intents.registration)
-		//~ );
-	//~ }
+	// Вопрос: Какая из этих групп твоя?
+	private function answerAskStudentGroup($vid, $progress, $course) {
+		$group_names = database.getGroupsByCourse(course);
+		$this->sendMessageVk(
+			$vid,
+			$this->responses['question_what_is_your_group'].format(progress),
+			$this->makeKeyboardSelectGroup($group_names, null, intents.registration)
+		);
+	}
 
-	//~ // Вопрос: можно ли присылать рассылки
-	//~ private function answerAskIfCanSend($vid, $progress) {
-		//~ $this->sendMessageVk($vid, $this->responses['question_can_send_messages'].format(progress), $this->keyboards['yn_text']);
-	//~ }
+	// Вопрос: можно ли присылать рассылки
+	private function answerAskIfCanSend($vid, $progress) {
+		$this->sendMessageVk($vid, sprintf($this->responses['question_can_send_messages'], $progress), $this->keyboards['yn_text']);
+	}
 
 	// Неверный ввод данных
 	private function answerWrongInput($vid) {
 		$this->sendMessageVk($vid, $this->responses['wrong_input']);
 	}
 
-	//~ // Добро пожаловать
-	//~ private function answerPostRegistration($vid, $user_type) {
-		//~ if (user_type == 1) {
-			//~ $this->sendMessageVk($vid, $this->responses['welcome_post_reg'], $this->keyboards['stud_hub']);
-		//~ } else {
-			//~ $this->sendMessageVk($vid, $this->responses['welcome_post_reg'], $this->keyboards['teacher_hub']);
-		//~ }
-	//~ }
+	// Добро пожаловать
+	private function answerPostRegistration($vid, $user_type) {
+		if ($user_type == 1) {
+			$this->sendMessageVk($vid, $this->responses['welcome_post_reg'], $this->keyboards['stud_hub']);
+		} else {
+			$this->sendMessageVk($vid, $this->responses['welcome_post_reg'], $this->keyboards['teacher_hub']);
+		}
+	}
 
-	//~ private function answerSelectDate($vid, $msg_id, $target, $intent, $edit=False) {
-		//~ // Отсылает сообщение с выбором даты
-		//~ $keyboard = self.makeKeyboardSelectRelevantDate(intent, msg_id, target)
+	// Отправляет сообщение с выбором даты
+	private function answerSelectDate($vid, $target, $intent, $edit=false, $msg_id=null) {
+		$keyboard = $this->makeKeyboardSelectRelevantDate($intent, $target);
 
-		//~ if not keyboard:
-			//~ $this->sendMessageVk($vid, $this->responses['no_relevant_data'])
-		//~ else:
-			//~ if edit:
-				//~ api.edit($vid, msg_id, $this->responses['pick_day'], kb=keyboard)
-			//~ else:
-				//~ $this->sendMessageVk($vid, $this->responses['pick_day'], kb=keyboard)
+		if (!$keyboard) {
+			$this->sendMessageVk($vid, $this->responses['no_relevant_data']);
+		} else {
+			if (!$edit) {
+				$this->sendMessageVk($vid, $this->responses['pick_day'], $keyboard);
+			} else {
+				$this->editMessageVk($vid, $this->responses['pick_day'], $msg_id, $keyboard);
+			}
+		}
+	}
 
-	//~ private function answerShowScheduleForGroup($vid, date, gid) {
-		//~ // Показ расписания для группы
-		//~ response = database.getScheduleDataForGroup(date, gid)
+	// Изменяет сообщение с просьбой подождать
+	private function answerEditWait($vid, $msg_id) {
+		$this->editMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)], $msg_id);
+	}
 
-		//~ if not response:
-			//~ $this->sendMessageVk($vid, $this->responses['no-data'])
-			//~ return
+	// Показ расписания для группы
+	private function answerShowScheduleForGroup($vid, $date, $gid, $msg_id) {
+		$response = ScheduleModel::getForGroup($date, $gid);
 
-		//~ # Расписание кэшировано?
-		//~ if response['photo_id']:
-			//~ # Прикол для Виталия :P
-			//~ if $vid == 240088163:
-				//~ $this->sendMessageVk($vid, self.getRandomWaitText())
-			//~ $this->sendMessageVk($vid, None, None, 'photo-'+str(self.public_id)+'_'+str(response['photo_id']))
-			//~ return
+		if ($vid == 240088163) { // Прикол для Виталия :P
+			$this->answerEditWait($vid, $msg_id);
+		}
 
-		//~ # Нет кэшированного изображения, делаем
-		//~ msg_id = $this->sendMessageVk($vid, self.getRandomWaitText())
+		if (!$response) { // Такого расписания нет
+			$this->editMessageVk($vid, $this->responses['no-data'], $msg_id);
+			return;
+		}
 
-		//~ schedule_id = database.getScheduleId(gid, date)
-		//~ pairs = database.getPairsForGroup(schedule_id)
-		//~ if not pairs:
-			//~ api.edit(self.$vid, self.msg_id, $this->responses['no-data'])
-			//~ return
-		//~ group_name = database.getGroupName(gid)
+		if ($response['photo_id'] !== null) { // Расписание кэшировано, отправляем сейчас
+			$this->sendMessageVk($vid, null, null, 'photo-'.$_ENV['public_id'].'_'+$response['photo_id']);
+			return;
+		}
 
-		//~ task_code = 'gsg-' + str(random.randint(0,99999))
+		// Нет кэшированного изображения, делаем
+		$this->answerEditWait($vid, $msg_id);
+		
+	}
 
-		//~ task = graphics.GroupScheduleGenerator(
-			//~ task_code,
-			//~ $vid,
-			//~ self.public_id,
-			//~ self.themes['rasp'],
-			//~ self,
-			//~ 'group-schedule',
-			//~ msg_id,
-			//~ date,
-			//~ pairs,
-			//~ group_name,
-			//~ schedule_id
-		//~ )
-		//~ self.tasks[task_code] = task
-		//~ self.tasks[task_code].start()
-
-	//~ private function answerShowScheduleForTeacher($vid, msg_id, date, teacher_id) {
+	//~ private function answerShowScheduleForTeacher($vid, $msg_id, $date, $teacher_id) {
 		//~ // Показ расписания для преподавателя
 		//~ response = database.getCachedScheduleOfTeacher(date, teacher_id)
 		//~ if response:
 			//~ # Есть кэшированное
-			//~ $this->sendMessageVk($vid, None, None, 'photo-'+str(self.public_id)+'_'+str(response['photo_id']))
+			//~ $this->sendMessageVk($vid, null, null, 'photo-'+str($_ENV['public_id'])+'_'+str(response['photo_id']))
 			//~ return
 		//~ msg_id = $this->sendMessageVk($vid, self.getRandomWaitText())
 
 		//~ self.tasks.append(graphics.TeacherScheduleGenerator(
 			//~ $vid,
-			//~ self.public_id,
+			//~ $_ENV['public_id'],
 			//~ self.themes['rasp'],
 			//~ self,
 			//~ 'teacher-schedule',
@@ -355,19 +389,20 @@ class BotController extends Controller {
 			//~ teacher_id
 		//~ ))
 		//~ self.tasks[-1].start()
+	//~ }
 
-	//~ private function answerShowGrades($vid, user_id, msg_id, login, password) {
-		//~ // Показ оценок
-		//~ # Проверяем если пользователь уже получал оценки
-		//~ photo_id = database.getMostRecentGradesImage(user_id)
-		//~ if photo_id:
-			//~ $this->sendMessageVk($vid, None, None, 'photo-'+str(self.public_id)+'_'+str(photo_id))
-		//~ else:
+	//~ // Показ оценок
+	//~ private function answerShowGrades($vid, $user_id, $msg_id, $login, $password) {
+		//~ // Проверяем если пользователь уже получал оценки недавно
+		//~ $photo_id = database.getMostRecentGradesImage(user_id);
+		//~ if ($photo_id) {
+			//~ $this->sendMessageVk($vid, null, null, 'photo-'+str($_ENV['public_id'])+'_'+str($photo_id));
+		//~ } else {
 			//~ $this->sendMessageVk($vid, self.getRandomWaitText())
 			//~ # Запускаем процесс сбора оценок
 			//~ self.tasks.append(graphics.GradesGenerator(
 				//~ $vid,
-				//~ self.public_id,
+				//~ $_ENV['public_id'],
 				//~ self.themes['grades'],
 				//~ self,
 				//~ 'grades',
@@ -378,38 +413,42 @@ class BotController extends Controller {
 				//~ user_id
 			//~ ))
 			//~ self.tasks[-1].start()
+		//~ }
+	//~ }
 
+	//~ // Спрашиваем логин журнала
 	//~ private function answerAskJournalLogin($vid) {
-		//~ // Спрашиваем логин журнала
-		//~ $this->sendMessageVk($vid, $this->responses['enter_login'], $this->keyboards['cancel'])
+		//~ $this->sendMessageVk($vid, $this->responses['enter_login'], $this->keyboards['cancel']);
+	//~ }
 
+	//~ // Спрашиваем пароль журнала
 	//~ private function answerAskJournalPassword($vid) {
-		//~ // Спрашиваем пароль журнала
-		//~ $this->sendMessageVk($vid, $this->responses['enter_password'], $this->keyboards['cancel'])
+		//~ $this->sendMessageVk($vid, $this->responses['enter_password'], $this->keyboards['cancel']);
+	//~ }
 
+	//~ // Ответ: Готово!
 	//~ private function answerDone($vid) {
-		//~ // Ответ: Готово!
-		//~ $this->sendMessageVk($vid, $this->responses['done'])
+		//~ $this->sendMessageVk($vid, $this->responses['done']);
+	//~ }
 
-	//~ private function answerToHub($vid, user_type, text) {
-		//~ // Возвращает пользователя в хаб
-		//~ if user_type == 1:
-			//~ $this->sendMessageVk($vid, text, $this->keyboards['stud_hub'])
-		//~ else:
-			//~ $this->sendMessageVk($vid, text, $this->keyboards['teacher_hub'])
+	//~ // Возвращает пользователя в хаб
+	//~ private function answerToHub($vid, $user_type, $text) {
+		//~ if ($user_type == 1) {
+			//~ $this->sendMessageVk($vid, $text, $this->keyboards['stud_hub']);
+		//~ } else {
+			//~ $this->sendMessageVk($vid, $text, $this->keyboards['teacher_hub']);
+		//~ }
+	//~ }
 
-	//~ private function answerToAdminHub($vid, text) {
-		//~ // Возвращает пользователя в хаб администрации
-		//~ $this->sendMessageVk($vid, text, $this->keyboards['admin-hub'])
-
-	//~ private function answerWhatsNext($vid, target, for_teacher) {
+	//~ private function answerWhatsNext($vid, $target, $for_teacher) {
 		//~ // Отвечает какая пара следующая
-		//~ if for_teacher:
-			//~ response = database.getNextPairForTeacher(target)
-		//~ else:
-			//~ response = database.getNextPairForGroup(target)
+		//~ if (for_teacher) {
+			//~ $response = database.getNextPairForTeacher(target);
+		//~ } else {
+			//~ $response = database.getNextPairForGroup(target);
+		//~ }
 
-		//~ if not response:
+		//~ if (not response{
 			//~ $this->sendMessageVk($vid, $this->responses['get-next-fail'])
 			//~ return
 
@@ -417,7 +456,7 @@ class BotController extends Controller {
 		//~ hours_left = response['dt'] * 24
 		//~ minutes_left = (hours_left - int(hours_left)) * 60
 
-		//~ if for_teacher == False:
+		//~ if (for_teacher == false{
 			//~ $this->sendMessageVk($vid, $this->responses['get-next-student'].format(
 				//~ str(round(hours_left)) + ' ' + formatHoursGen(round(hours_left)),
 				//~ str(round(minutes_left)) + ' ' + formatMinutesGen(round(minutes_left)),
@@ -425,7 +464,7 @@ class BotController extends Controller {
 				//~ response['pair_place'],
 				//~ response['pair_time']
 			//~ ))
-		//~ else:
+		//~ else{
 			//~ $this->sendMessageVk($vid, $this->responses['get-next-teacher'].format(
 				//~ str(round(hours_left)) + ' ' + formatHoursGen(round(hours_left)),
 				//~ str(round(minutes_left)) + ' ' + formatMinutesGen(round(minutes_left)),
@@ -448,29 +487,29 @@ class BotController extends Controller {
 
 	//~ private function answerUpdateHub($vid, user_type) {
 		//~ // Присылает клавиатуру с меню
-		//~ if user_type == 1:
+		//~ if (user_type == 1{
 			//~ $this->sendMessageVk($vid, $this->responses['updating-menu'], $this->keyboards['stud_hub'])
 
-	// Отправляет сообщение с выбором курса
-	private function answerSelectGroupCourse($vid, $msg_id, $intent, $edit) {
-		$keyboard = $this->keyboardSelectCourse($msg_id, $intent);
-		if ($edit) {
-			$this->editMessageVk($vid, $msg_id, $this->responses['select-course'], keyboard);
-		} else {
-			$this->sendMessageVk($vid, $this->responses['select-course'], keyboard);
-		}
-	}
+	//~ // Отправляет сообщение с выбором курса
+	//~ private function answerSelectGroupCourse($vid, $msg_id, $intent, $edit) {
+		//~ $keyboard = $this->keyboardSelectCourse($msg_id, $intent);
+		//~ if (($edit) {
+			//~ $this->editMessageVk($vid, $msg_id, $this->responses['select-course'], keyboard);
+		//~ } else {
+			//~ $this->sendMessageVk($vid, $this->responses['select-course'], keyboard);
+		//~ }
+	//~ }
 
-	// Отправляет сообщение с выбором группы
-	private function answerSelectGroupSpec($msg_id, $course, $intent) {
-		$groups = GroupModel::getAllByCourse($course);
-		$this->editMessageVk(
-			$this->vid,
-			$this->responses['select-group'],
-			$msg_id,
-			$this->makeKeyboardSelectGroup($groups, $msg_id, $intent)
-		);
-	}
+	//~ // Отправляет сообщение с выбором группы
+	//~ private function answerSelectGroupSpec($msg_id, $course, $intent) {
+		//~ $groups = GroupModel{{getAllByCourse($course);
+		//~ $this->editMessageVk(
+			//~ $this->vid,
+			//~ $this->responses['select-group'],
+			//~ $msg_id,
+			//~ $this->makeKeyboardSelectGroup($groups, $intent)
+		//~ );
+	//~ }
 
 	//~ private function answerBells($vid) {
 		//~ // Отправляет сообщение с расписанием звонков
@@ -480,27 +519,27 @@ class BotController extends Controller {
 		//~ // Отправляет сообщение профиля
 		//~ message = ""
 
-		//~ if user['type'] == 1:
+		//~ if (user['type'] == 1{
 			//~ # Студент
 			//~ message += $this->responses['profile-identifier-student'].format(database.getGroupName(user['gid']))
-			//~ if user['journal_login'] == None:
+			//~ if (user['journal_login'] == null{
 				//~ message += $this->responses['profile-journal-not-filled']
-			//~ else:
+			//~ else{
 				//~ message += $this->responses['profile-journal-filled'].format(user['journal_login'])
-		//~ else:
+		//~ else{
 			//~ # Преподаватель
 			//~ message += $this->responses['profile-identifier-teacher'].format(database.getTeacherSurname(user['teacher_id']))
 
-		//~ if user['allows_mail'] == 1:
+		//~ if (user['allows_mail'] == 1{
 			//~ message += $this->responses['profile-mail-allowed']
-		//~ else:
+		//~ else{
 			//~ message += $this->responses['profile-mail-not-allowed']
 
 		//~ keyboard = self.makeProfileKeyboard(msg_id, user)
 
-		//~ if edit:
+		//~ if (edit{
 			//~ api.edit($vid, msg_id, message, keyboard)
-		//~ else:
+		//~ else{
 			//~ $this->sendMessageVk($vid, message, keyboard)
 
 	//~ private function answerAskTeacherSignature($vid, question_progress) {
@@ -514,15 +553,15 @@ class BotController extends Controller {
 	//~ private function answerShowCabinetOccupancy($vid, date, place) {
 		//~ // Показ занятости кабинетов
 		//~ response = database.getCachedPlaceOccupancy(date, place)
-		//~ if response:
+		//~ if (response{
 			//~ # Есть кэшированное
-			//~ $this->sendMessageVk($vid, None, None, 'photo-'+str(self.public_id)+'_'+str(response['photo_id']))
+			//~ $this->sendMessageVk($vid, null, null, 'photo-'+str($_ENV['public_id'])+'_'+str(response['photo_id']))
 			//~ return
 
 		//~ msg_id = $this->sendMessageVk($vid, self.getRandomWaitText())
 		//~ self.tasks.append(graphics.CabinetGenerator(
 			//~ $vid,
-			//~ self.public_id,
+			//~ $_ENV['public_id'],
 			//~ self.themes['rasp'],
 			//~ self,
 			//~ 'teacher-schedule',
@@ -558,7 +597,7 @@ class BotController extends Controller {
 
 	//~ private function answerShowStats($vid, file_id) {
 		//~ // Отправляет файл со статистикой
-		//~ $this->sendMessageVk($vid, $this->responses['stats'], None, 'doc'+str($vid)+'_'+str(file_id))
+		//~ $this->sendMessageVk($vid, $this->responses['stats'], null, 'doc'+str($vid)+'_'+str(file_id))
 
 	#endregion
 
@@ -588,6 +627,8 @@ class BotController extends Controller {
 			$report = urlencode($view->plain());
 			file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
 		}
+
+		$this->sendMessageVk($this->vid, "Ой-ёй! Произошла ошибка! Разработчик уведомлён, в скором времени будет починено");
 		exit("ok");
 	}
 
@@ -605,51 +646,6 @@ class BotController extends Controller {
 	// Обработка обычного сообщения. Возвращает true, если необходимо обновить профиль пользователя
 	private function handlePlainMessage($text, &$user): bool {
 		$vid = $user['vk_id'];
-		
-		//~ if ($user['state'] == STATE_HUB) {;
-			//~ if ($text == 'Расписание') {;
-				//~ if ($user['type'] == 1) {;
-					//~ $this->answerSelectDate($vid, $msg_id + 1, $user['gid'], intents.stud_rasp_view);;
-				//~ } else {;
-					//~ $this->answerSelectDate($vid, $msg_id + 1, $user['teacher_id'], intents.teacher_rasp_view);;
-				//~ };
-				//~ database.addStatRecord($user['gid'], $user['type'], 1);;
-			//~ if ($text == 'Оценки' and $user['type'] == 1) {;
-				//~ $this->answerShowGrades($vid, $user['id'], $msg_id + 1, $user['journal_login'], $user['journal_password']);
-				//~ database.addStatRecord($user['gid'], $user['type'], 2);
-			//~ if ($text == 'Кабинеты' and $user['type'] == 2) {;
-				//~ $user['state'] = States.enter_cab;
-				//~ $this->answerAskCabNumber($vid);
-				//~ database.addStatRecord($user['gid'], $user['type'], 7);
-				//~ return true;
-			//~ if ($text == 'Что дальше?') {;
-				//~ if ($user['type'] == 1) {;
-					//~ $this->answerWhatsNext($vid, $user['gid'], false);
-				//~ else { {;
-					//~ $this->answerWhatsNext($vid, $user['teacher_id'], true);
-				//~ database.addStatRecord($user['gid'], $user['type'], 3);
-			//~ if ($text == 'Где преподаватель?') {;
-				//~ $this->answerSelectTeacher($vid, $msg_id + 1, intents.teacher_rasp_view);
-				//~ database.addStatRecord($user['gid'], $user['type'], 4);
-			//~ if ($text == 'Расписание группы') {;
-				//~ $this->answerSelectGroupCourse($vid, $msg_id + 1, intents.stud_rasp_view, false);
-				//~ database.addStatRecord($user['gid'], $user['type'], 5);
-			//~ if ($text == 'Звонки') {;
-				//~ $this->answerBells($vid);
-				//~ database.addStatRecord($user['gid'], $user['type'], 6);
-			//~ if ($text == 'Профиль') {;
-				//~ $this->answerShowProfile($vid, $msg_id + 1, $user, false);
-			//~ if ($text == '.') {;
-				//~ $this->answerUpdateHub($vid, $user['type']);
-			//~ if ($text == 'admin' and $user['admin']) {;
-				//~ // "Оно находится прямо рядом с тобой и ты его даже не замечаешь" - Майк, из сериала "Очень странные дела";
-				//~ $user['state'] = States.admin;
-				//~ $this->answerShowAdminPanel($vid);
-				//~ return true;
-			//~ return false;
-		//~ if ($user['state'] == STATE_VOID) {;
-			//~ // Заглушка;
-			//~ return false;
 
 		switch ($user['state']) {
 			case STATE_REG_1: // После "Ты студент?
@@ -674,34 +670,86 @@ class BotController extends Controller {
 					return false;
 				};
 
+			case STATE_REG_CAN_SEND: // После "Можно ли отправлять сообщения?" при регистрации;
+				if ($text == 'Да') {
+					$user['allows_mail'] = 1;
+				} else if ($text == 'Нет') {
+					$user['allows_mail'] = 0;
+				} else {
+					$this->answerWrongInput($this->vid);
+					return false;
+				}
+				$user['state'] = STATE_HUB;
+				$this->answerPostRegistration($this->vid, $user['type']);
+				return true;
+
+			case STATE_HUB: // Главное меню
+				switch ($text) {
+					case 'Расписание':
+						if ($user['type'] == 1) {
+							$this->answerSelectDate($this->vid, $user['gid'], INTENT_STUD_RASP_VIEW);
+						} else {
+							$this->answerSelectDate($this->vid, $user['teacher_id'], INTENT_TEACHER_RASP_VIEW);
+						}
+						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
+						return false;
+					//~ case 'Оценки' and $user['type'] == 1) {
+						//~ $this->answerShowGrades($this->vid, $user['id'], $msg_id + 1, $user['journal_login'], $user['journal_password']);
+						//~ database.addStatRecord($user['gid'], $user['type'], 2);
+					//~ case 'Кабинеты' and $user['type'] == 2) {
+						//~ $user['state'] = States.enter_cab;
+						//~ $this->answerAskCabNumber($this->vid);
+						//~ database.addStatRecord($user['gid'], $user['type'], 7);
+						//~ return true;
+					//~ case 'Что дальше?') {
+						//~ if ($user['type'] == 1) {
+							//~ $this->answerWhatsNext($this->vid, $user['gid'], false);
+						//~ else { {
+							//~ $this->answerWhatsNext($this->vid, $user['teacher_id'], true);
+						//~ database.addStatRecord($user['gid'], $user['type'], 3);
+					//~ case 'Где преподаватель?') {
+						//~ $this->answerSelectTeacher($this->vid, $msg_id + 1, INTENT_TEACHER_RASP_VIEW);
+						//~ database.addStatRecord($user['gid'], $user['type'], 4);
+					//~ case 'Расписание группы') {
+						//~ $this->answerSelectGroupCourse($this->vid, $msg_id + 1, INTENT_STUD_RASP_VIEW, false);
+						//~ database.addStatRecord($user['gid'], $user['type'], 5);
+					//~ case 'Звонки') {
+						//~ $this->answerBells($this->vid);
+						//~ database.addStatRecord($user['gid'], $user['type'], 6);
+					//~ case 'Профиль') {
+						//~ $this->answerShowProfile($this->vid, $msg_id + 1, $user, false);
+					//~ case '.') {
+						//~ $this->answerUpdateHub($this->vid, $user['type']);
+					//~ case 'admin' and $user['admin']) {
+						//~ // "Оно находится прямо рядом с тобой и ты его даже не замечаешь" - Майк, из сериала "Очень странные дела";
+						//~ $user['state'] = States.admin;
+						//~ $this->answerShowAdminPanel($this->vid);
+						//~ return true;
+					default:
+						return false;
+				}
+
 			default:
 				return false;
 		}
 		
+		//~ if ($user['state'] == STATE_VOID) {;
+			//~ // Заглушка;
+			//~ return false;
+		
 		//~ if ($user['state'] == STATE_SELECT_COURSE) {
 			//~ // После "На каком ты курсе?" при регистрации;
 			//~ if (!(is_numeric($text) && 1 <= intval($text) && intval($text) < 5)) {
-				//~ $this->answerWrongInput($vid);
+				//~ $this->answerWrongInput($this->vid);
 				//~ return false;
 			//~ }
 			//~ $user['state'] = STATE_VOID;
 			//~ $user['question_progress'] += 1;
-			//~ $this->answerAskStudentGroup($vid, $user['question_progress'], $text);
+			//~ $this->answerAskStudentGroup($this->vid, $user['question_progress'], $text);
 			//~ return true;
 		//~ }
 		
-		//~ if ($user['state'] == States.reg_can_send) {;
-			//~ // После "Можно ли отправлять сообщения?" при регистрации;
-			//~ if ($text == 'Да') {;
-				//~ $user['allows_mail'] = 1;
-			//~ else if ($text == 'Нет') {;
-				//~ $user['allows_mail'] = 0;
-			//~ else { {;
-				//~ $this->answerWrongInput($vid);
-				//~ return false;
-			//~ $user['state'] = States.hub;
-			//~ $this->answerPostRegistration($vid, $user['type']);
-			//~ return true;
+		
 		//~ if ($user['state'] == States.enter_login or $user['state'] == States.enter_login_after_profile) {;
 			//~ // Ввод логина;
 			//~ if ($this->checkIfCancelled($text, $user)) {;
@@ -711,7 +759,7 @@ class BotController extends Controller {
 				//~ $user['state'] = States.enter_password;
 			//~ else { {;
 				//~ $user['state'] = States.enter_password_after_profile;
-			//~ $this->answerAskJournalPassword($vid);
+			//~ $this->answerAskJournalPassword($this->vid);
 			//~ return true;
 
 		//~ if ($user['state'] == States.enter_password or $user['state'] == States.enter_password_after_profile) {;
@@ -720,58 +768,58 @@ class BotController extends Controller {
 				//~ return true;
 			//~ $user['journal_password'] = hashlib.sha1(bytes($text, "utf-8")).hexdigest();
 
-			//~ $this->answerDone($vid);
-			//~ $this->answerToHub($vid, $user['type'], $this->answers['returning']);
+			//~ $this->answerDone($this->vid);
+			//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
 			//~ if ($user['state'] == States.enter_password_after_profile) {;
-				//~ $this->answerShowProfile($vid, $msg_id + 1, $user, false);
+				//~ $this->answerShowProfile($this->vid, $msg_id + 1, $user, false);
 
-			//~ $user['state'] = States.hub;
+			//~ $user['state'] = STATE_HUB;
 			//~ return true;
 
 		//~ if ($user['state'] == States.enter_cab) {;
 			//~ // Ввод кабинета;
 			//~ if ($this->checkIfCancelled($text, $user)) {;
 				//~ return true;
-			//~ $user['state'] = States.hub;
-			//~ $this->answerToHub($vid, $user['type'], $this->answers['returning']);
-			//~ $this->answerSelectDate($vid, $msg_id + 1, $text, intents.view_cabinets);
+			//~ $user['state'] = STATE_HUB;
+			//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
+			//~ $this->answerSelectDate($this->vid, $msg_id + 1, $text, INTENT_VIEW_CABINETS);
 			//~ return true;
 
 		//~ if ($user['state'] == States.admin) {;
 			//~ if ($text == 'Выход') {;
-				//~ $user['state'] = States.hub;
-				//~ $this->answerToHub($vid, $user['type'], $this->answers['returning']);
+				//~ $user['state'] = STATE_HUB;
+				//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
 				//~ return true;
 
 			//~ if ($text == 'Рассылка') {;
 				//~ $user['state'] = States.mail_input_target;
 				//~ database.addMailRecord($user['id']);
-				//~ $this->answerAskMailTarget($vid);
+				//~ $this->answerAskMailTarget($this->vid);
 				//~ return true;
 
 			//~ if ($text == 'Статистика') {;
 				//~ // Генерируем HTML;
 				//~ path = $this->generateHtmlStats();
 				//~ // Загружаем документ;
-				//~ doc_id = api.uploadDocument($vid, path);
-				//~ $this->answerShowStats($vid, doc_id);
+				//~ doc_id = api.uploadDocument($this->vid, path);
+				//~ $this->answerShowStats($this->vid, doc_id);
 		//~ if ($user['state'] == States.mail_input_target) {;
 			//~ mail_id = database.getMostRecentMailRecord($user['id']);
 			//~ if ($text == 'Отмена') {;
 				//~ $user['state'] = States.admin;
-				//~ $this->answerToAdminHub($vid, $this->answers['returning']);
+				//~ $this->answerToAdminHub($this->vid, $this->answers['returning']);
 				//~ database.deleteMail(mail_id);
 				//~ return true;
 			//~ $user['state'] = States.mail_input_message;
 			//~ database.updateMail(mail_id, 'target', $text);
-			//~ $this->answerAskMailMessage($vid);
+			//~ $this->answerAskMailMessage($this->vid);
 			//~ return true;
 		//~ if ($user['state'] == States.mail_input_message) {;
 			//~ mail_id = database.getMostRecentMailRecord($user['id']);
 			//~ $user['state'] = States.admin;
 			//~ if ($text == 'Отмена') {;
 				//~ database.deleteMail(mail_id);
-				//~ $this->answerToAdminHub($vid, $this->answers['returning']);
+				//~ $this->answerToAdminHub($this->vid, $this->answers['returning']);
 			//~ else { {;
 				//~ database.updateMail(mail_id, 'message', $text);
 				//~ api.tgAlert(;
@@ -785,76 +833,83 @@ class BotController extends Controller {
 					//~ mail_info['message'],;
 					//~ $this->keyboards['unsubscribe'];
 				//~ );
-				//~ $this->answerToAdminHub($vid, $this->answers['mail-saved'].format(len(mail_$users)));
+				//~ $this->answerToAdminHub($this->vid, $this->answers['mail-saved'].format(len(mail_$users)));
 			//~ return true
 	}
 
-	private function handleCallbackMessage($payload, $msg_id, &$user) : bool {
-		switch ($payload->type) {
+	// Обработка сообщений обратного вызова. Возвращает true, если необходимо обновить профиль пользователя
+	private function handleCallbackMessage($data, $msg_id, &$user) : bool {
+		switch ($data->type) {
 			case PAYLOAD_SELECT_COURSE: // Выбран курс. Намерение передаётся дальше
-				$this->answerSelectGroupSpec($msg_id, $payload->num, $payload->intent);
+				$this->answerSelectGroupSpec($msg_id, $data->num, $data->intent);
 				return true;
+
+			case PAYLOAD_SELECT_GROUP: // Выбрана группа
+				switch ($data->intent) {
+					case INTENT_REGISTRATION: // Студент регистрируется
+						$user['gid'] = $data->gid;
+						$user['question_progress'] += 1;
+						$user['state'] = STATE_REG_CAN_SEND;
+						$this->answerAskIfCanSend($this->vid, $user['question_progress']);
+						return true;
+
+					case INTENT_STUD_RASP_VIEW: // Выполняется просмотр расписания
+						$this->answerSelectDate(vid, data['msg_id'], data['gid'], INTENT_STUD_RASP_VIEW, true);
+						return false;
+
+					case INTENT_EDIT_STUDENT: // Изменение группы студента
+						$user['gid'] = data['gid'];
+						$this->answerShowProfile(vid, data['msg_id'], user, true);
+						return true;
+
+					case INTENT_EDIT_TYPE: // Преподаватель становится студентом
+						$user['type'] = 1;
+						$user['teacher_id'] = null;
+						$user['gid'] = data['gid'];
+						$user['state'] = STATE_HUB;
+						$this->answerToHub(vid, 1, $this->answers['welcome_post_reg']);
+						return true;
+
+					default: // Нет намерения для такого типа данных
+						return false;
+				}
+
+			case PAYLOAD_SELECT_DATE: // Выбрана дата
+				switch ($data->intent) {
+					case INTENT_STUD_RASP_VIEW: // Просмотр расписания группы
+						$this->answerShowScheduleForGroup($this->vid, $data->date, $data->target, $msg_id);
+						return false;
+
+					case INTENT_TEACHER_RASP_VIEW: // Просмотр расписания преподавателя
+						$this->answerShowScheduleForTeacher(vid, data['msg_id'], data['date'], data['target']);
+						return false;
+
+					case INTENT_VIEW_CABINETS: // Просмотр занятости кабинетов
+						$this->answerShowCabinetOccupancy(vid, data['date'], data['target']);
+						return false;
+				}
 
 			default:
 				return false;
 		}
 		/*
-		if data['type'] == PayloadTypes.select_date:
-			# Выбрана дата.. но для чего?
-			if data['intent'] == intents.stud_rasp_view:
-				# Просмотр расписания группы
-				self.answerShowScheduleForGroup(vid, data['date'], data['target'])
-				return False
-			if data['intent'] == intents.teacher_rasp_view:
-				# Просмотр расписания преподавателя
-				self.answerShowScheduleForTeacher(vid, data['msg_id'], data['date'], data['target'])
-				return False
-			if data['intent'] == intents.view_cabinets:
-				# Просмотр занятости кабинетов
-				self.answerShowCabinetOccupancy(vid, data['date'], data['target'])
-				return False
-
-		if data['type'] == PayloadTypes.select_course:
-			# Выбран курс. intent передаётся дальше
-			self.answerSelectGroupSpec(vid, data['msg_id'], data['num'], data['intent'])
+		
 
 		if data['type'] == PayloadTypes.show_terms:
 			# Показ условий использования
 			self.answerShowTerms(vid)
-			return False
+			return false
 
-		if data['type'] == PayloadTypes.select_group:
-			# Выбрана группа.. но для чего?
-			if data['intent'] == intents.registration:
-				user['gid'] = data['gid']
-				user['question_progress'] += 1
-				user['state'] = States.reg_can_send
-				self.answerAskIfCanSend(vid, user['question_progress'])
-				return True
-			if data['intent'] == intents.stud_rasp_view:
-				self.answerSelectDate(vid, data['msg_id'], data['gid'], intents.stud_rasp_view, True)
-				return False
-			if data['intent'] == intents.edit_student:
-				user['gid'] = data['gid']
-				self.answerShowProfile(vid, data['msg_id'], user, True)
-				return True
-			if data['intent'] == intents.edit_type:
-				# Преподаватель становится студентом
-				user['type'] = 1
-				user['teacher_id'] = None
-				user['gid'] = data['gid']
-				user['state'] = States.hub
-				self.answerToHub(vid, 1, self.answers['welcome_post_reg'])
-				return True
+	
 
 		if data['type'] == PayloadTypes.enter_credentials:
 			# Переводим пользователя на ввод логина и пароля дневника
-			if data['after_profile'] == False:
+			if data['after_profile'] == false:
 				user['state'] = States.enter_login
 			else:
 				user['state'] = States.enter_login_after_profile
 			self.answerAskJournalLogin(vid)
-			return True
+			return true
 
 		if data['type'] == PayloadTypes.select_teacher:
 			# Удаляем прошлые сообщения
@@ -864,34 +919,34 @@ class BotController extends Controller {
 			api.delete(to_delete)
 
 			# Выбран преподаватель... но для чего?
-			if data['intent'] == intents.teacher_rasp_view:
+			if data['intent'] == INTENT_TEACHER_RASP_VIEW:
 				# Просмотр расписания преподавателя
-				self.answerSelectDate(vid, None, data['teacher_id'], intents.teacher_rasp_view, False)
-				return False
+				self.answerSelectDate(vid, null, data['teacher_id'], INTENT_TEACHER_RASP_VIEW, false)
+				return false
 
 			if data['intent'] == intents.registration:
 				# Преподаватель регистрируется
 				user['teacher_id'] = data['teacher_id']
 				user['question_progress'] += 1
-				user['state'] = States.reg_can_send
+				user['state'] = STATE_REG_CAN_SEND
 				self.answerAskIfCanSend(vid, user['question_progress'])
-				return True
+				return true
 
 			if data['intent'] == intents.edit_type:
 				# Студент становится преподавателем
 				api.delete(data['msg_id'])
-				user['gid'] = None
+				user['gid'] = null
 				user['teacher_id'] = data['teacher_id']
-				user['state'] = States.hub
+				user['state'] = STATE_HUB
 				user['type'] = 2
 				self.answerToHub(vid, 2, self.answers['welcome_post_reg'])
-				return True
+				return true
 
 		if data['type'] == PayloadTypes.edit_group:
 			# Изменение группы, привязанной к пользователю
 			if data['intent'] == intents.edit_student:
-				self.answerSelectGroupCourse(vid, data['msg_id'], intents.edit_student, True)
-				return False
+				self.answerSelectGroupCourse(vid, data['msg_id'], intents.edit_student, true)
+				return false
 
 		if data['type'] == PayloadTypes.toggle_mail:
 			# Переключение разрешения рассылки
@@ -899,8 +954,8 @@ class BotController extends Controller {
 				user['allows_mail'] = 0
 			else:
 				user['allows_mail'] = 1
-			self.answerShowProfile(vid, data['msg_id'], user, True)
-			return True
+			self.answerShowProfile(vid, data['msg_id'], user, true)
+			return true
 
 		if data['type'] == PayloadTypes.edit_type:
 			# Изменяем тип профиля
@@ -913,13 +968,13 @@ class BotController extends Controller {
 				self.answerSelectTeacher(vid, msg_id + 1, intents.edit_type)
 			else:
 				# Изменяем на студента. Спрашиваем его курс
-				self.answerSelectGroupCourse(vid, msg_id + 1, intents.edit_type, False)
-			return True
+				self.answerSelectGroupCourse(vid, msg_id + 1, intents.edit_type, false)
+			return true
 
 		if data['type'] == PayloadTypes.unsubscribe:
 			user['allows_mail'] = 0
 			self.answerMailDisabled(vid)
-			return True
+			return true
 		*/
 	}
 
@@ -946,7 +1001,6 @@ class BotController extends Controller {
 				break;
 
 			case "message_new":
-				print_r($this->data);
 				$text = $this->data->object->message->text;
 				if (strlen($text) == 0) break; // Нет текста в сообщении - не обрабатываем
 
@@ -962,10 +1016,8 @@ class BotController extends Controller {
 				// Обработка сообщения
 				$need_update = $this->handleCallbackMessage($payload, $msg_id, $user);
 				if ($need_update) UserModel::save($user);
+				$this->answerCallbackVk();
 				break;
-			
-			// TODO: message_deny
-			// TODO: message_allow
 
 			default:
 				exit("unknown event");
