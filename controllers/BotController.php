@@ -136,7 +136,7 @@ class BotController extends Controller {
 
 	#region Работа с API ВКонтакте
 	// Отправка сообщения пользователю ВКонтакте
-	private function sendMessageVk($vid, string $msg, string $keyboard = null, string $attachment = null) {
+	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -366,7 +366,11 @@ class BotController extends Controller {
 
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
-		
+		$gen = new TableGenerator();
+		$photo_id = $gen->run();
+		$this->sendMessageVk($vid, null, null, 'photo-'.$_ENV['public_id'].'_'.$photo_id);
+
+		// TODO: кэшировать photo_id
 	}
 
 	//~ private function answerShowScheduleForTeacher($vid, $msg_id, $date, $teacher_id) {

@@ -1,6 +1,7 @@
 <?php
 // Главный файл на который поступают запросы к Вадяботу
 require_once(__DIR__."/config.php");
+require_once(__DIR__."/class/Tablegenerator.php");
 
 // Выполнение маршрутизации
 $routes = array(
