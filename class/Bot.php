@@ -1,42 +1,6 @@
 <?php
-// Контроллер бота
-
-// Состояния
-define('STATE_REG_1', 0);		 				// Ответ студент или нет
-define('STATE_SELECT_COURSE', 1);				// Выбор курса студента
-define('STATE_VOID', 2);						// Нет реакции бота
-define('STATE_REG_CAN_SEND', 3);				// Ответ можно ли отправлять рассылки
-define('STATE_HUB', 4);							// Выбор функции
-define('STATE_ENTER_LOGIN', 5);					// Ввод логина
-define('STATE_ENTER_PASSWORD', 6);				// Ввод пароля
-define('STATE_ENTER_LOGIN_AFTER_PROFILE', 7);	// Ввод логина, потом ставим 8
-define('STATE_ENTER_PASSWORD_AFTER_PROFILE', 8);// Ввод пароля, потом показываем профиль
-define('STATE_ENTER_CAB', 9);					// Ввод кабинета
-
-// Типы payload
-define('PAYLOAD_SELECT_GROUP', 0);		// Выбор группы
-define('PAYLOAD_SHOW_TERMS', 1);		// Показать условия использования
-define('PAYLOAD_SELECT_DATE' , 2);		// Выбор даты
-define('PAYLOAD_ENTER_CREDENTIALS', 3);	// Ввод данных журнала
-define('PAYLOAD_SELECT_TEACHER', 4);	// Выбор преподавателя
-define('PAYLOAD_SELECT_COURSE', 5); 	// Выбор курса
-define('PAYLOAD_EDIT_GROUP', 6); 		// Смена группы
-define('PAYLOAD_TOGGLE_MAIL', 7); 		// Переключение разрешения рассылок
-define('PAYLOAD_EDIT_TYPE', 8); 		// Смена типа аккаунта
-define('PAYLOAD_UNSUBSCRIBE', 9); 		// Запрет рассылки
-
-// Намерения
-define('INTENT_REGISTRATION', 0);		// Для регистрации
-define('INTENT_STUD_RASP_VIEW', 1); 	// Просмотр расписания группы
-define('INTENT_TEACHER_RASP_VIEW', 2);	// Просмотр расписания преподавателя
-define('INTENT_EDIT_STUDENT', 3);		// Изменение для студента
-define('INTENT_VIEW_CABINETS', 4); 		// Просмотр занятости кабинетов
-define('INTENT_EDIT_TYPE', 5); 			// Изменение типа профиля
-
-// Нумерация функций для статистики
-define('FUNC_RASP', 0); // Расписание
-
-class BotController extends Controller {
+// Бот
+class Bot {
 
 	private $responses; // Все сообщения бота
 	private $wait_responses; // Сообщения с просьбой подождать
@@ -44,9 +8,7 @@ class BotController extends Controller {
 	private $data; // Данные запроса от ВК
 	private $vid; // ID ВК пользователя по запросу которого выполняется обработка
 
-	public function __construct(string $request_uri) {
-		parent::__construct($request_uri);
-
+	public function __construct($input) {
 		$this->responses = array(
 			"hi1"=> "Привет, я - Техбот. Моя задача - облегчить твою жизнь, но, для начала, мне нужно задать несколько вопросов",
 			"hi2"=> "Ознакомься с условиями использования прежде чем использовать мои функции",
@@ -116,8 +78,13 @@ class BotController extends Controller {
 		);
 
 		// Определяем данные запроса
-		// TODO: добавить проверку строки secret
-		$this->data = json_decode(file_get_contents("php://input"));
+		$this->data = json_decode($input);
+
+		// Проверка секретного ключа
+		if ($this->data != $_ENV['vk_secret']) {
+			exit();
+		}
+		
 		switch ($this->data->type) {
 			case "message_new":
 				$this->vid = $this->data->object->message->from_id;
@@ -146,7 +113,8 @@ class BotController extends Controller {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
+		$fp = fopen(vk_api_endpoint."messages.send?".http_build_query($params), 'r');
+		fclose($fp);
 	}
 
 	// Изменение сообщения
@@ -160,7 +128,8 @@ class BotController extends Controller {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		file_get_contents(vk_api_endpoint."messages.edit?".http_build_query($params));
+		$fp = fopen(vk_api_endpoint."messages.edit?".http_build_query($params), 'r');
+		fclose($fp);
 	}
 
 	// Отправляет ответ на callback-запрос пользователя
@@ -172,7 +141,8 @@ class BotController extends Controller {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		file_get_contents(vk_api_endpoint."messages.sendMessageEventAnswer?".http_build_query($params));
+		$fp = fopen(vk_api_endpoint."messages.sendMessageEventAnswer?".http_build_query($params), 'r');
+		fclose($fp);
 	}
 
 	// Возвращает разметку кнопки клавиатуры
@@ -366,9 +336,9 @@ class BotController extends Controller {
 
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
-		$gen = new TableGenerator();
-		$photo_id = $gen->run();
-		$this->sendMessageVk($vid, null, null, 'photo-'.$_ENV['public_id'].'_'.$photo_id);
+		//~ $gen = new TableGenerator($vid);
+		//~ $photo_id = $gen->run();
+		//~ $this->sendMessageVk($vid, null, null, 'photo-'.$_ENV['public_id'].'_'.$photo_id);
 
 		// TODO: кэшировать photo_id
 	}
@@ -504,16 +474,16 @@ class BotController extends Controller {
 		//~ }
 	//~ }
 
-	//~ // Отправляет сообщение с выбором группы
-	//~ private function answerSelectGroupSpec($msg_id, $course, $intent) {
-		//~ $groups = GroupModel{{getAllByCourse($course);
-		//~ $this->editMessageVk(
-			//~ $this->vid,
-			//~ $this->responses['select-group'],
-			//~ $msg_id,
-			//~ $this->makeKeyboardSelectGroup($groups, $intent)
-		//~ );
-	//~ }
+	// Отправляет сообщение с выбором группы
+	private function answerSelectGroupSpec($msg_id, $course, $intent) {
+		$groups = GroupModel::getAllByCourse($course);
+		$this->editMessageVk(
+			$this->vid,
+			$this->responses['select-group'],
+			$msg_id,
+			$this->makeKeyboardSelectGroup($groups, $intent)
+		);
+	}
 
 	//~ private function answerBells($vid) {
 		//~ // Отправляет сообщение с расписанием звонков
@@ -608,28 +578,35 @@ class BotController extends Controller {
 	# region Обработка ошибок
 	// Функция обработки ошибок
 	public function mailErrorReport($message, $file, $line, $trace) {
-		$view = new ErrorReportView([
-			"message" => $message,
-			"file" => $file,
-			"line" => $line,
-			"trace" => $trace,
-			"vid" => $this->vid
-		]);
+		$report = "<pre>Произошла ошибка в Техботе</pre>\n";
+		$report .= "<b>Пользователь у которого появилась ошибка: </b> https://vk.com/id".$this->vid."\n";
+		$report .= "<b>Сообщение ошибки: </b> ".$this->message."\n";
+		$report .= "<b>Файл: </b> ".$this->file."\n";
+		$report .= "<b>Строка: </b> ".$this->line."\n";
 
-		if ($_ENV["notifications_type"] == "email") {
-			// email
-			$report = $view->render();
-			
+		// Трассировка ошибки
+		if (isset($this->trace) && count($this->trace) > 0) {
+			$report .= "<b>Трассировка ошибки:</b> (чем выше тем позже)<pre>\n";
+			foreach ($this->trace as $item) {
+				$report .= "{$item['file']}:{$item['line']} -- функция {$item['function']}\n";
+			}
+			$report .= "</pre>\n";
+		} else {
+			$report .= "<b>Трассировка ошибки отсутствует</b>\n";
+		}
+
+		if ($_ENV["notifications_type"] == "email") { // email
 			$headers = "MIME-Version: 1.0\n";
 			$headers .= "From: Техбот <{$_ENV['notifier_email']}>\n";
 			$headers .= "Content-type: text/html; charset=utf-8\n";
-		
+
 			mail($_ENV["webmaster_email"], "Ошибка в Техботе", $report, $headers);
 
 		} else if ($_ENV["notifications_type"] == "telegram") {
 			// telegram
-			$report = urlencode($view->plain());
-			file_get_contents("https://api.telegram.org/bot{$_ENV['notifier_bot_token']}/sendMessage?chat_id={$_ENV['notifier_bot_chat']}&text=$report&parse_mode=html");
+			$params = ['chat_id'=>$_ENV['notifier_bot_chat'], 'text'=>urlencode($report), 'parse_mode'=>'html']
+			$fp = fopen("https://api.telegram.org/bot".$_ENV['notifier_bot_token']."/sendMessage?".http_build_query($params));
+			fclose($fp);
 		}
 
 		$this->sendMessageVk($this->vid, "Ой-ёй! Произошла ошибка! Разработчик уведомлён, в скором времени будет починено");
@@ -642,7 +619,7 @@ class BotController extends Controller {
 	}
 
 	// Callback-функция для set_error_handler
-	private function reportError(int $errno, string $errstr, string $errfile, int $errline) {
+	public function reportError(int $errno, string $errstr, string $errfile, int $errline) {
 		$this->mailErrorReport($errstr, $errfile, $errline, null);
 	}
 	#endregion
