@@ -4,7 +4,19 @@
 // https://stackoverflow.com/questions/63249647/how-to-read-table-cell-content-via-phpword-library
 // https://stackoverflow.com/questions/50994146/read-ms-word-document-with-php-word
 
-require_once(__DIR__."/config.php");
+require_once("vendor/autoload.php");
+require_once(__DIR__."/class/Database.php");
+
+// Автозагрузка моделей
+spl_autoload_register(function($classname) {
+	if (preg_match('/Model$/', $classname)) {
+		require_once __DIR__.'/models/'.$classname.'.php';
+	}
+});
+
+// Загрузка .env переменных
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 // Определения цветов для функции displayMessage
 if (php_sapi_name() == "cli") { // Скрипт запущен через консоль

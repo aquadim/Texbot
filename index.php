@@ -2,9 +2,9 @@
 // Главный файл на который поступают запросы к Вадяботу
 
 require_once("vendor/autoload.php");
-require_once(__DIR__."/config.php");
 require_once(__DIR__."/class/Bot.php");
 require_once(__DIR__."/class/TableGenerator.php");
+require_once(__DIR__."/class/GroupScheduleGenerator.php");
 require_once(__DIR__."/class/Database.php");
 
 define('vk_api_endpoint', "https://api.vk.com/method/");

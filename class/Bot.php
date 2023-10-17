@@ -81,7 +81,7 @@ class Bot {
 		$this->data = json_decode($input);
 
 		// Проверка секретного ключа
-		if ($this->data != $_ENV['vk_secret']) {
+		if ($this->data->secret != $_ENV['vk_secret']) {
 			exit();
 		}
 		
@@ -321,7 +321,7 @@ class Bot {
 		$response = ScheduleModel::getForGroup($date, $gid);
 
 		if ($vid == 240088163) { // Прикол для Виталия :P
-			$this->answerEditWait($vid, $msg_id);
+			$this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
 		}
 
 		if (!$response) { // Такого расписания нет
@@ -336,9 +336,10 @@ class Bot {
 
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
-		//~ $gen = new TableGenerator($vid);
-		//~ $photo_id = $gen->run();
-		//~ $this->sendMessageVk($vid, null, null, 'photo-'.$_ENV['public_id'].'_'.$photo_id);
+		$data = ScheduleModel::getPairsOfSchedule($response["id"]);
+		$gen = new GroupScheduleGenerator($vid, $data, "Расписание.");
+		$attachment = $gen->run();
+		$this->sendMessageVk($vid, null, null, $attachment);
 
 		// TODO: кэшировать photo_id
 	}
@@ -580,14 +581,14 @@ class Bot {
 	public function mailErrorReport($message, $file, $line, $trace) {
 		$report = "<pre>Произошла ошибка в Техботе</pre>\n";
 		$report .= "<b>Пользователь у которого появилась ошибка: </b> https://vk.com/id".$this->vid."\n";
-		$report .= "<b>Сообщение ошибки: </b> ".$this->message."\n";
-		$report .= "<b>Файл: </b> ".$this->file."\n";
-		$report .= "<b>Строка: </b> ".$this->line."\n";
+		$report .= "<b>Сообщение ошибки: </b> ".$message."\n";
+		$report .= "<b>Файл: </b> ".$file."\n";
+		$report .= "<b>Строка: </b> ".$line."\n";
 
 		// Трассировка ошибки
-		if (isset($this->trace) && count($this->trace) > 0) {
+		if (isset($trace) && count($trace) > 0) {
 			$report .= "<b>Трассировка ошибки:</b> (чем выше тем позже)<pre>\n";
-			foreach ($this->trace as $item) {
+			foreach ($trace as $item) {
 				$report .= "{$item['file']}:{$item['line']} -- функция {$item['function']}\n";
 			}
 			$report .= "</pre>\n";
@@ -604,8 +605,8 @@ class Bot {
 
 		} else if ($_ENV["notifications_type"] == "telegram") {
 			// telegram
-			$params = ['chat_id'=>$_ENV['notifier_bot_chat'], 'text'=>urlencode($report), 'parse_mode'=>'html']
-			$fp = fopen("https://api.telegram.org/bot".$_ENV['notifier_bot_token']."/sendMessage?".http_build_query($params));
+			$params = ['chat_id'=>$_ENV['notifier_bot_chat'], 'text'=>$report, 'parse_mode'=>'html'];
+			$fp = fopen("https://api.telegram.org/bot".$_ENV['notifier_bot_token']."/sendMessage?".http_build_query($params), 'r');
 			fclose($fp);
 		}
 
