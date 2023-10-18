@@ -320,10 +320,6 @@ class Bot {
 	private function answerShowScheduleForGroup($vid, $date, $gid, $msg_id) {
 		$response = ScheduleModel::getForGroup($date, $gid);
 
-		if ($vid == 240088163) { // Прикол для Виталия :P
-			$this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
-		}
-
 		if (!$response) { // Такого расписания нет
 			$this->editMessageVk($vid, $this->responses['no-data'], $msg_id);
 			return;
