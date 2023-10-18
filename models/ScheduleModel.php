@@ -55,7 +55,7 @@ class ScheduleModel extends Model {
 		$db = Database::getConnection();
 		$stm = $db->prepare("
 		SELECT
-			pairs.ptime AS ptime,
+			TIME_FORMAT(pairs.ptime, '%H:%i') AS ptime,
 			pair_names.name AS pname,
 			GROUP_CONCAT(teachers.surname, ' ', pair_places.place SEPARATOR ' / ')
 		FROM pairs
