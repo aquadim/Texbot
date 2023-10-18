@@ -26,7 +26,7 @@ class Bot {
 			"enter_password"=> "Введи пароль",
 			"done"=> "Готово!",
 			"returning"=> "Возвращаемся",
-			"get-next-student"=> "Остаётся {0} {1} до начала пары {2}. Начало в {4} ({3})",
+			"get-next-student"=> "Остаётся %s %s до начала пары %s. Начало в %s (%s)",
 			"get-next-teacher"=> "Остаётся {0} {1} до начала пары {2}. Начало в {3} с группой {4} в {5}",
 			"get-next-fail"=> "Не удалось узнать какая пара будет следующей",
 			"select-teacher"=> "Выбери преподавателя (стр. {0}/{1})",
@@ -411,39 +411,33 @@ class Bot {
 		//~ }
 	//~ }
 
-	//~ private function answerWhatsNext($vid, $target, $for_teacher) {
-		//~ // Отвечает какая пара следующая
-		//~ if (for_teacher) {
-			//~ $response = database.getNextPairForTeacher(target);
-		//~ } else {
-			//~ $response = database.getNextPairForGroup(target);
-		//~ }
+	private function answerWhatsNext($vid, $target, $for_teacher) {
+		// Отвечает какая пара следующая
+		if (!$for_teacher) {
+			$response = PairModel::getNextGroupPair($target);
+		} else {
+			$response = PairModel::getNextTeacherPair($target);
+		}
 
-		//~ if (not response{
-			//~ $this->sendMessageVk($vid, $this->responses['get-next-fail'])
-			//~ return
+		if (!$response) {
+			$this->sendMessageVk($vid, $this->responses['get-next-fail']);
+			return;
+		}
 
-		//~ # Оставшееся время
-		//~ hours_left = response['dt'] * 24
-		//~ minutes_left = (hours_left - int(hours_left)) * 60
+		// Оставшееся время
+		$hours_left = intdiv($response['dt'], 60);
+		$minutes_left = $response['dt'] % 60;
 
-		//~ if (for_teacher == false{
-			//~ $this->sendMessageVk($vid, $this->responses['get-next-student'].format(
-				//~ str(round(hours_left)) + ' ' + formatHoursGen(round(hours_left)),
-				//~ str(round(minutes_left)) + ' ' + formatMinutesGen(round(minutes_left)),
-				//~ response['pair_name'],
-				//~ response['pair_place'],
-				//~ response['pair_time']
-			//~ ))
-		//~ else{
-			//~ $this->sendMessageVk($vid, $this->responses['get-next-teacher'].format(
-				//~ str(round(hours_left)) + ' ' + formatHoursGen(round(hours_left)),
-				//~ str(round(minutes_left)) + ' ' + formatMinutesGen(round(minutes_left)),
-				//~ response['pair_name'],
-				//~ response['pair_time'],
-				//~ response['pair_group'],
-				//~ response['pair_place']
-			//~ ))
+		if ($for_teacher == false) {
+			$this->sendMessageVk($vid, sprintf($this->responses['get-next-student'],
+				$this->num_word($hours_left, array('час', 'часа', 'часов'), true),
+				$this->num_word($minutes_left, array('минута', 'минуты', 'минут'), true),
+				$response['pair_name'],
+				$response['pair_time'],
+				$response['pair_place']
+			));
+		}
+	}
 
 	//~ private function answerSelectTeacher($vid, message_id, intent) {
 		//~ // Отправляет сообщения с клавиатурами выбора преподавателя
@@ -679,12 +673,13 @@ class Bot {
 						//~ $this->answerAskCabNumber($this->vid);
 						//~ database.addStatRecord($user['gid'], $user['type'], 7);
 						//~ return true;
-					//~ case 'Что дальше?') {
-						//~ if ($user['type'] == 1) {
-							//~ $this->answerWhatsNext($this->vid, $user['gid'], false);
-						//~ else { {
-							//~ $this->answerWhatsNext($this->vid, $user['teacher_id'], true);
-						//~ database.addStatRecord($user['gid'], $user['type'], 3);
+					case 'Что дальше?':
+						if ($user['type'] == 1) {
+							$this->answerWhatsNext($this->vid, $user['gid'], false);
+						} else {
+							$this->answerWhatsNext($this->vid, $user['teacher_id'], true);
+						}
+						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
 					//~ case 'Где преподаватель?') {
 						//~ $this->answerSelectTeacher($this->vid, $msg_id + 1, INTENT_TEACHER_RASP_VIEW);
 						//~ database.addStatRecord($user['gid'], $user['type'], 4);
@@ -1002,5 +997,31 @@ class Bot {
 		}
 
 		exit("ok");
+	}
+
+	// Склонение слова
+	// https://snipp.ru/php/word-declination
+	private function num_word($value, $words, $show = true) {
+		$num = $value % 100;
+
+		if ($num > 19) { 
+			$num = $num % 10; 
+		}
+		
+		$out = ($show) ?  $value . ' ' : '';
+		switch ($num) {
+
+			case 1:
+				$out .= $words[0]; break;
+
+			case 2:
+			case 3:
+			case 4:
+				$out .= $words[1]; break;
+				
+			default:
+				$out .= $words[2]; break;
+		}
+		return $out;
 	}
 }

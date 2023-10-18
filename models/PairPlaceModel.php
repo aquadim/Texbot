@@ -20,7 +20,7 @@ class PairPlaceModel extends Model {
 			// Разделяем $place пробелом
 			$parts = explode(" ", $place);
 			$teacher_surname = $parts[0];
-			if (count($parts) == 2) {
+			if (count($parts) >= 2) {
 				$location = $parts[1];
 			}
 			$teacher = TeacherModel::getBySurname($teacher_surname);

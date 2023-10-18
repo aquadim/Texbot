@@ -51,24 +51,24 @@ class ScheduleModel extends Model {
 	}
 
 	// Возвращает данные для показа в функции расписания
+	// TODO: перенести в PairModel
 	public static function getPairsOfSchedule($schedule_id) {
 		$db = Database::getConnection();
 		$stm = $db->prepare("
 		SELECT
-			TIME_FORMAT(pairs.ptime, '%H:%i') AS ptime,
-			pair_names.name AS pname,
+			TIME_FORMAT(pairs.ptime, '%H:%i'),
+			pair_names.name,
 			GROUP_CONCAT(teachers.surname, ' ', pair_places.place SEPARATOR ' / ')
 		FROM pairs
 		LEFT JOIN pair_names ON pairs.name = pair_names.id
 		LEFT JOIN pair_places ON pair_places.pair_id = pairs.id
 		LEFT JOIN teachers ON teachers.id = pair_places.teacher_id
 		WHERE schedule_id=?
-		GROUP BY pairs.id");
+		GROUP BY pair_places.pair_id");
 		$stm->bind_param("i", $schedule_id);
 		$stm->execute();
 		$out = $stm->get_result()->fetch_all(MYSQLI_NUM);
 		array_unshift($out, array("Время", "Пара", "Место проведения"));
 		return $out;
 	}
-	
 }
