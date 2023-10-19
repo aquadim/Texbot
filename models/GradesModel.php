@@ -1,13 +1,13 @@
 <?php
-// Модель расписаний
+// Модель оценок
 /*
- * gid - ID группы расписания 
- * day - Дата расписания 
- * photo_id - Значение photo_id кэшированного изображения расписания
+ * user_id - ID пользователя, запросившего оценки  
+ * date_create - Дата создания записи  
+ * photo_id - photo_id фотографии 
  */
 
-class ScheduleModel extends Model {
-	protected static $table_name = "schedules";
+class GradesModel extends Model {
+	protected static $table_name = "grades";
 
 	public static function create(int $gid, string $day) {
 		$db = Database::getConnection();
@@ -35,17 +35,16 @@ class ScheduleModel extends Model {
 		return $stm->insert_id;
 	}
 
-	// Возвращает актуальные ДАТЫ РАСПИСАНИЙ
-	public static function getRelevantDates() : mysqli_result {
+	// Возвращает самое недавнее photo_id для оценок пользователя
+	public static function getRecent($user_id) {
 		$db = Database::getConnection();
-		return $db->query("SELECT DISTINCT day FROM schedules WHERE day BETWEEN CURRENT_DATE AND CURRENT_DATE + 1");
-	}
-
-	// Возвращает данные для определённой группы и даты
-	public static function getForGroup($date, $group) {
-		$db = Database::getConnection();
-		$stm = $db->prepare("SELECT id, photo_id FROM schedules WHERE day=? AND gid=?");
-		$stm->bind_param('si', $date, $group);
+		$stm = $db->prepare('
+			SELECT photo_id
+			FROM grades
+			WHERE user_id=? AND date_create > datetime("now", "localtime", "-10 minute")
+			ORDER BY date_create DESC
+			LIMIT 1');
+		$stm->bind_param("i", $user_id);
 		$stm->execute();
 		return $stm->get_result()->fetch_array();
 	}

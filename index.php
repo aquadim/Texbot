@@ -1,11 +1,12 @@
 <?php
 // Главный файл на который поступают запросы к Вадяботу
 
-require_once("vendor/autoload.php");
-require_once(__DIR__."/class/Bot.php");
-require_once(__DIR__."/class/TableGenerator.php");
-require_once(__DIR__."/class/GroupScheduleGenerator.php");
-require_once(__DIR__."/class/Database.php");
+require_once "vendor/autoload.php";
+require_once __DIR__."/class/Bot.php";
+require_once __DIR__."/class/TableGenerator.php";
+require_once __DIR__."/class/GroupScheduleGenerator.php";
+require_once __DIR__."/class/GradesGenerator.php";
+require_once __DIR__."/class/Database.php";
 
 define('vk_api_endpoint', "https://api.vk.com/method/");
 
@@ -44,6 +45,7 @@ define('INTENT_EDIT_TYPE', 5); 			// Изменение типа профиля
 // Нумерация функций для статистики
 define('FUNC_RASP', 0); // Расписание
 define('FUNC_NEXT', 1); // Что дальше
+define('FUNC_GRADES', 2); // Оценки
 
 // Объявление общих переменных
 define('GEN_MONTH_NUM_TO_STR', [9=>"сентября",10=>"октября",11=>"ноября",12=>"декабря",1=>"января",2=>"февраля",3=>"марта",4=>"апреля",5=>"мая",6=>"июня",7=>"июля",8=>"августа"]);

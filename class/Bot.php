@@ -102,8 +102,10 @@ class Bot {
 	}
 
 	#region Работа с API ВКонтакте
+
 	// Отправка сообщения пользователю ВКонтакте
-	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) {
+	// Возвращает id отправленного сообщения
+	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : int {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -113,12 +115,12 @@ class Bot {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		$fp = fopen(vk_api_endpoint."messages.send?".http_build_query($params), 'r');
-		fclose($fp);
+		$data = file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
+		return json_decode($data)->response;
 	}
 
 	// Изменение сообщения
-	private function editMessageVk($vid, string $msg, int $msg_id, string $keyboard = null, string $attachment = null) {
+	private function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -306,14 +308,19 @@ class Bot {
 			if (!$edit) {
 				$this->sendMessageVk($vid, $this->responses['pick_day'], $keyboard);
 			} else {
-				$this->editMessageVk($vid, $this->responses['pick_day'], $msg_id, $keyboard);
+				$this->editMessageVk($vid, $msg_id, $this->responses['pick_day'], $keyboard);
 			}
 		}
 	}
 
 	// Изменяет сообщение с просьбой подождать
 	private function answerEditWait($vid, $msg_id) {
-		$this->editMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)], $msg_id);
+		$this->editMessageVk($vid, $msg_id, $this->wait_responses[array_rand($this->wait_responses)]);
+	}
+
+	// Отправляет сообщение с просьбой подождать
+	private function answerSendWait($vid) : int {
+		return $this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
 	}
 
 	// Показ расписания для группы
@@ -321,7 +328,7 @@ class Bot {
 		$response = ScheduleModel::getForGroup($date, $gid);
 
 		if (!$response) { // Такого расписания нет
-			$this->editMessageVk($vid, $this->responses['no-data'], $msg_id);
+			$this->editMessageVk($vid, $msg_id, $this->responses['no-data']);
 			return;
 		}
 
@@ -332,10 +339,10 @@ class Bot {
 
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
-		$data = ScheduleModel::getPairsOfSchedule($response["id"]);
-		$gen = new GroupScheduleGenerator($vid, $data, "Расписание.");
+		$data = PairModel::getPairsOfSchedule($response["id"]);
+		$gen = new GroupScheduleGenerator(null, $data, "Расписание.");
 		$attachment = $gen->run();
-		$this->sendMessageVk($vid, null, null, $attachment);
+		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
 		// TODO: кэшировать photo_id
 	}
@@ -362,30 +369,22 @@ class Bot {
 		//~ self.tasks[-1].start()
 	//~ }
 
-	//~ // Показ оценок
-	//~ private function answerShowGrades($vid, $user_id, $msg_id, $login, $password) {
-		//~ // Проверяем если пользователь уже получал оценки недавно
-		//~ $photo_id = database.getMostRecentGradesImage(user_id);
+	// Показ оценок
+	private function answerShowGrades($vid, $user_id, $login, $password) {
+		// Проверяем если пользователь уже получал оценки недавно
+		//~ $photo_id = GradesModel::getRecent($user_id);
 		//~ if ($photo_id) {
-			//~ $this->sendMessageVk($vid, null, null, 'photo-'+str($_ENV['public_id'])+'_'+str($photo_id));
+			//~ $this->sendMessageVk($vid, null, null, 'photo'.$vid.'_'.$photo_id);
 		//~ } else {
-			//~ $this->sendMessageVk($vid, self.getRandomWaitText())
-			//~ # Запускаем процесс сбора оценок
-			//~ self.tasks.append(graphics.GradesGenerator(
-				//~ $vid,
-				//~ $_ENV['public_id'],
-				//~ self.themes['grades'],
-				//~ self,
-				//~ 'grades',
-				//~ msg_id,
-				//~ login,
-				//~ password,
-				//~ $this->keyboards['enter_journal_credentials'],
-				//~ user_id
-			//~ ))
-			//~ self.tasks[-1].start()
+			$msg_id = $this->answerSendWait($vid);
 		//~ }
-	//~ }
+
+		$data = $this->getGradesData($login, $password);
+		$gen = new GradesGenerator($vid, $data, 'Твои оценки на '.date('Y-m-d H:i'));
+		$attachment = $gen->run();
+		//$this->editMessageVk($vid, $msg_id, null, null, $attachment);
+		$this->sendMessageVk($vid, null, null, $attachment);
+	}
 
 	//~ // Спрашиваем логин журнала
 	//~ private function answerAskJournalLogin($vid) {
@@ -469,9 +468,9 @@ class Bot {
 	private function answerSelectGroupSpec($msg_id, $course, $intent) {
 		$groups = GroupModel::getAllByCourse($course);
 		$this->editMessageVk(
+			$msg_id,
 			$this->vid,
 			$this->responses['select-group'],
-			$msg_id,
 			$this->makeKeyboardSelectGroup($groups, $intent)
 		);
 	}
@@ -665,9 +664,11 @@ class Bot {
 						}
 						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
 						return false;
-					//~ case 'Оценки' and $user['type'] == 1) {
-						//~ $this->answerShowGrades($this->vid, $user['id'], $msg_id + 1, $user['journal_login'], $user['journal_password']);
-						//~ database.addStatRecord($user['gid'], $user['type'], 2);
+					case 'Оценки':
+						if ($user['type'] != 1) return false; // Не студентам нельзя
+						$this->answerShowGrades($this->vid, $user['id'], $user['journal_login'], $user['journal_password']);
+						StatModel::create($user['gid'], $user['type'], FUNC_GRADES);
+						return true;
 					//~ case 'Кабинеты' and $user['type'] == 2) {
 						//~ $user['state'] = States.enter_cab;
 						//~ $this->answerAskCabNumber($this->vid);
@@ -1023,5 +1024,71 @@ class Bot {
 				$out .= $words[2]; break;
 		}
 		return $out;
+	}
+
+	// Возвращает таблицу оценок, совместимую с TableGenerator
+	private function getGradesData($login, $password) {
+		// Создаём разделяемый обработчик
+		$sh = curl_share_init();
+		curl_share_setopt($sh, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE); // Делимся куками
+
+		// Подаём запрос в электронный дневник на авторизацию
+		$auth = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/login');
+		curl_setopt($auth, CURLOPT_COOKIEFILE, "");
+		curl_setopt($auth, CURLOPT_SHARE, $sh);
+		curl_setopt($auth, CURLOPT_POST, 1);
+		curl_setopt($auth, CURLOPT_POSTFIELDS, 'username='.$login.'&userpass='.$password);
+		curl_setopt($auth, CURLOPT_ENCODING, 'windows-1251');
+		curl_setopt($auth, CURLOPT_RETURNTRANSFER, 1);
+		curl_exec($auth);
+
+		// Запрос на экспорт оценок
+		$grades = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/journal_och?page=1&marks=1&export=1');
+		curl_setopt($grades, CURLOPT_COOKIEFILE, "");
+		curl_setopt($grades, CURLOPT_SHARE, $sh);
+		curl_setopt($grades, CURLOPT_RETURNTRANSFER, 1);
+		$data = curl_exec($grades);
+
+		// Разрыв сессии с журналом
+		$logout = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/logout');
+		curl_setopt($logout, CURLOPT_COOKIEFILE, "");
+		curl_setopt($logout, CURLOPT_SHARE, $sh);
+		curl_setopt($logout, CURLOPT_RETURNTRANSFER, 1);
+		curl_exec($logout);
+
+		// Парсинг экспортного XML
+		// Данные хранятся в строках с тэгом Row
+		// Первые 3 не содержат оценок, их пропускаем
+		// Последний ряд тоже не содержит оценок, его не обрабатываем
+		$doc = new DOMDocument();
+		$doc->loadXML($data);
+		$rows = $doc->getElementsByTagName("Row");
+
+		$output = [['Дисциплина', 'Оценки', 'Средний балл']];
+		for ($y = 4; $y < count($rows) - 2; $y++) {
+			$output_row = [];
+			$children = $rows[$y]->childNodes;
+			// Children - дочерние узлы тэга Row
+			// Переносы строк в документе считаются узлом текста, поэтому
+			// [0] - текстовый узел
+			// [1] - содержит название дисциплины
+			// [2] - текстовый узел
+			// [3] - содержит оценки
+			// [4] - текстовый узел
+			// [5] - средний балл
+			// [6] - текстовый узел
+			$output[] = [
+				trim($children[1]->nodeValue),
+				trim($children[3]->nodeValue),
+				trim($children[5]->nodeValue)
+			];
+		}
+
+		// Закрываем сессии curl
+		curl_share_close($sh);
+		curl_close($auth);
+		curl_close($grades);
+
+		return $output;
 	}
 }

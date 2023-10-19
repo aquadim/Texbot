@@ -5,6 +5,10 @@ class TableGenerator {
 	private $filename_base = "table";
 	private $font =  __DIR__.'/../fonts/Lato-Regular.ttf';
 	private $peer_id;
+	/* Если $peer_id == null, то фотографии загружаются как публичные и доступны всем пользователям.
+	 * Иначе у загруженной фотографии будет владелец со значением $peer_id и фотографию сможет просмотреть
+	 * только он (и наверное админ сообщества - не тестировал)
+	 */
 
 	protected $theme = [
 		"body_line_height" => 25,
@@ -81,6 +85,7 @@ class TableGenerator {
 			'v'=>'5.131'
 		];
 		$data = json_decode(file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params)));
+		//print_r($data);
 		return "photo".$data->response[0]->owner_id.'_'.$data->response[0]->id;
 	}
 

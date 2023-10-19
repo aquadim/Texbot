@@ -21,6 +21,6 @@ class GroupScheduleGenerator extends TableGenerator {
 		"body_font_size"=> 20
 	];
 
-	protected $line_size_constraints = [0, 0, 0];
-	protected $title_line_size = 0;
+	protected $line_size_constraints = [0, 40, 25];
+	protected $title_line_size = 35;
 }
