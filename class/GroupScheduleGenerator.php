@@ -14,7 +14,7 @@ class GroupScheduleGenerator extends TableGenerator {
 			"title_color"=> [30, 30, 30],
 			"body_bg_even"=> [180, 180, 170],
 			"body_bg_odd" => [210, 210, 200],
-			"body-fg" => [40, 40, 40]
+			"body_fg" => [40, 40, 40]
 		],
 	
 		"title_font_size"=> 30,

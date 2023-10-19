@@ -22,7 +22,7 @@ class TableGenerator {
 			"title_color"=> [30, 30, 30],
 			"body_bg_even"=> [180, 180, 170],
 			"body_bg_odd" => [210, 210, 200],
-			"body-fg" => [40, 40, 40]
+			"body_fg" => [40, 40, 40]
 		],
 	
 		"title_font_size"=> 30,
@@ -85,7 +85,6 @@ class TableGenerator {
 			'v'=>'5.131'
 		];
 		$data = json_decode(file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params)));
-		//print_r($data);
 		return "photo".$data->response[0]->owner_id.'_'.$data->response[0]->id;
 	}
 
@@ -165,14 +164,23 @@ class TableGenerator {
 		$body_y = $theme['padding'] * 2 + $title_height;
 		$line_y = $body_y;
 		for ($y = 0; $y < $height; $y++) {
-			$this->drawTableLine($im, $theme['padding'], $line_y, $theme['padding'] + $body_width - 1, $line_y + $row_sizes[$y] - 1, $colors, ($y % 2 == 0));
+			$this->drawTableLine(
+				$im,
+				$theme['padding'],
+				$line_y,
+				$theme['padding'] + $body_width - 1,
+				$line_y + $row_sizes[$y] - 1,
+				$colors,
+				($y % 2 == 0),
+				$data[$y]
+			);
 
 			// Содержимое яйчеек!
 			$cellrow_x = $theme['padding'] * 2; // x-координата отрисовки строк текста яйчейки
 			for ($x = 0; $x < $width; $x++) {
 				$cellrow_y = $line_y + $theme['padding']; // y-координата отрисовки конкретной строки текста яйчейки
 				foreach ($cells[$y][$x] as $celltext) {
-					imagettftext($im, $theme['body_font_size'], 0, $cellrow_x, $cellrow_y + $theme['body_line_height'], $colors['body-fg'], $this->font, $celltext);
+					imagettftext($im, $theme['body_font_size'], 0, $cellrow_x, $cellrow_y + $theme['body_line_height'], $colors['body_fg'], $this->font, $celltext);
 					$cellrow_y += $theme['body_line_height'] + $theme['line_spacing'];
 				}
 				$cellrow_x += $col_sizes[$x];// + $theme['padding'] * 2;
@@ -189,6 +197,7 @@ class TableGenerator {
 	}
 	
 	// Разбивает длинную строку на линии, перенося слова (слова - это участки текста, разделённые пробелами)
+	// TODO: заменить на wordwrap? а она поддерживает utf-8?
 	private function splitLongString($text, $line_size) : array {
 
 		// Не разделять слова
@@ -241,7 +250,7 @@ class TableGenerator {
 	}
 
 	// Отрисовывает задний фон строки таблицы
-	protected function drawTableLine($im, $x1, $y1, $x2, $y2, $colors, $is_even) : void {
+	protected function drawTableLine($im, $x1, $y1, $x2, $y2, $colors, $is_even, $text_row) : void {
 		if ($is_even) {
 			imagefilledrectangle($im, $x1, $y1, $x2, $y2, $colors['body_bg_even']);
 		} else {
