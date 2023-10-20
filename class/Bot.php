@@ -84,6 +84,20 @@ class Bot {
 		if ($this->data->secret != $_ENV['vk_secret']) {
 			exit();
 		}
+
+		// Закрываем соединение для того чтобы скрипт мог работать больше чем 10 секунд
+		// Скрипт должен уметь работать больше чем 10 секунд потому что если vk не получил "ok"
+		// за 10 секунд от сервера, он пришлёт запрос ещё раз. На самом деле сервер обрабатывал первый
+		// запрос, и когда он его закончил, он ответил бы "ok", но второй запрос уже прислался...
+		// Так будет происходить 5 раз перед тем как вк не сдастся и не прекратит присылать новые запросы
+		// https://ru.stackoverflow.com/q/893864/418543
+		header("Connection: close");
+		ob_start();
+		echo "ok";
+		$size = ob_get_length();
+		header("Content-Length: ".$size);
+		ob_end_flush();
+		flush();
 		
 		switch ($this->data->type) {
 			case "message_new":
@@ -600,7 +614,7 @@ class Bot {
 		}
 
 		$this->sendMessageVk($this->vid, "Ой-ёй! Произошла ошибка! Разработчик уведомлён, в скором времени будет починено");
-		exit("ok");
+		exit();
 	}
 
 	// Callback-функция для set_exception_handler
@@ -963,7 +977,7 @@ class Bot {
 				// Пользователь не зарегистрирован, создаём его
 				$this->answerOnMeet($this->vid);
 				UserModel::create($this->vid);
-				exit("ok");
+				return;
 			}
 		}
 
@@ -996,8 +1010,6 @@ class Bot {
 			default:
 				exit("unknown event");
 		}
-
-		exit("ok");
 	}
 
 	// Склонение слова
