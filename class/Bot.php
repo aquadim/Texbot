@@ -50,6 +50,7 @@ class Bot {
 			"mail-saved"=> "Данные рассылки сохранены, затронуто пользователей: {0}",
 			"mail-disabled"=> "Больше не потревожу! Если снова захочешь получать рассылки - то включить их можно в меню профиля",
 			"stats"=> "Вот HTML разметка, позволющая просмотреть статистику",
+			"grades-working" => "🕓 Терпение, оценки ещё обрабатываются"
 		);
 
 		$this->wait_responses = array(
@@ -91,7 +92,9 @@ class Bot {
 		// запрос, и когда он его закончил, он ответил бы "ok", но второй запрос уже прислался...
 		// Так будет происходить 5 раз перед тем как вк не сдастся и не прекратит присылать новые запросы
 		// https://ru.stackoverflow.com/q/893864/418543
+		ob_end_clean();
 		header("Connection: close");
+		ignore_user_abort(true); // just to be safe
 		ob_start();
 		echo "ok";
 		$size = ob_get_length();
@@ -102,6 +105,7 @@ class Bot {
 		switch ($this->data->type) {
 			case "message_new":
 				$this->vid = $this->data->object->message->from_id;
+				$this->msg_id = $this->data->object->message->id;
 				break;
 			case "message_event":
 				$this->vid = $this->data->object->peer_id;
@@ -122,7 +126,7 @@ class Bot {
 	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : int {
 		$params = array(
 			"peer_id" => $vid,
-			"message" => $msg,
+			"message" => "(".$this->msg_id.")".$msg,
 			"keyboard" => $keyboard,
 			"attachment" => $attachment,
 			"random_id" => 0,
@@ -386,18 +390,26 @@ class Bot {
 	// Показ оценок
 	private function answerShowGrades($vid, $user_id, $login, $password) {
 		// Проверяем если пользователь уже получал оценки недавно
-		//~ $photo_id = GradesModel::getRecent($user_id);
-		//~ if ($photo_id) {
-			//~ $this->sendMessageVk($vid, null, null, 'photo'.$vid.'_'.$photo_id);
-		//~ } else {
-			$msg_id = $this->answerSendWait($vid);
-		//~ }
+		$response = GradesModel::getRecent($user_id);
+		if ($response) { // Как минимум 10 минут назад были запрошены оценки
+			if (!isset($response['photo_id'])) { // Оценки ещё собираются
+				$this->sendMessageVk($vid, $this->responses['grades-working']);
+			} else {
+				$this->sendMessageVk($vid, null, null, $response['photo']);
+			}
+			return;
+		} else {
+			$this->answerSendWait($vid);
+		}
 
+		// TODO: изменять присланное сообщение, а не присылать новое
 		$data = $this->getGradesData($login, $password);
 		$gen = new GradesGenerator($vid, $data, 'Твои оценки на '.date('Y-m-d H:i'));
 		$attachment = $gen->run();
-		//$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 		$this->sendMessageVk($vid, null, null, $attachment);
+
+		// Оставляем только часть с photo_id
+		GradesModel::create($user_id, $attachment);
 	}
 
 	//~ // Спрашиваем логин журнала
@@ -489,9 +501,10 @@ class Bot {
 		);
 	}
 
-	//~ private function answerBells($vid) {
-		//~ // Отправляет сообщение с расписанием звонков
-		//~ $this->sendMessageVk($vid, $this->responses['bells-schedule'])
+	private function answerBells($vid) {
+		// Отправляет сообщение с расписанием звонков
+		$this->sendMessageVk($vid, $this->responses['bells-schedule']);
+	}
 
 	//~ private function answerShowProfile($vid, msg_id, user, edit) {
 		//~ // Отправляет сообщение профиля
@@ -638,7 +651,7 @@ class Bot {
 					// Пользователь - студент
 					$user['type'] = 1;
 					$user['question_progress'] += 1;
-					$user['state'] = STATE_SELECT_COURSE;
+					$user['state'] = STATE_VOID;
 					$this->answerAskCourseNumber($vid, $user['question_progress']);
 					return true;
 				} else if ($text == 'Нет') {
@@ -678,16 +691,13 @@ class Bot {
 						}
 						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
 						return false;
+
 					case 'Оценки':
 						if ($user['type'] != 1) return false; // Не студентам нельзя
 						$this->answerShowGrades($this->vid, $user['id'], $user['journal_login'], $user['journal_password']);
 						StatModel::create($user['gid'], $user['type'], FUNC_GRADES);
 						return true;
-					//~ case 'Кабинеты' and $user['type'] == 2) {
-						//~ $user['state'] = States.enter_cab;
-						//~ $this->answerAskCabNumber($this->vid);
-						//~ database.addStatRecord($user['gid'], $user['type'], 7);
-						//~ return true;
+
 					case 'Что дальше?':
 						if ($user['type'] == 1) {
 							$this->answerWhatsNext($this->vid, $user['gid'], false);
@@ -695,15 +705,21 @@ class Bot {
 							$this->answerWhatsNext($this->vid, $user['teacher_id'], true);
 						}
 						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
+						return false;
+					//~ case 'Кабинеты' and $user['type'] == 2) {
+						//~ $user['state'] = States.enter_cab;
+						//~ $this->answerAskCabNumber($this->vid);
+						//~ database.addStatRecord($user['gid'], $user['type'], 7);
+						//~ return true;
 					//~ case 'Где преподаватель?') {
 						//~ $this->answerSelectTeacher($this->vid, $msg_id + 1, INTENT_TEACHER_RASP_VIEW);
 						//~ database.addStatRecord($user['gid'], $user['type'], 4);
 					//~ case 'Расписание группы') {
 						//~ $this->answerSelectGroupCourse($this->vid, $msg_id + 1, INTENT_STUD_RASP_VIEW, false);
 						//~ database.addStatRecord($user['gid'], $user['type'], 5);
-					//~ case 'Звонки') {
-						//~ $this->answerBells($this->vid);
-						//~ database.addStatRecord($user['gid'], $user['type'], 6);
+					case 'Звонки':
+						$this->answerBells($this->vid);
+						StatModel::create($user['gid'], $user['type'], FUNC_BELLS);
 					//~ case 'Профиль') {
 						//~ $this->answerShowProfile($this->vid, $msg_id + 1, $user, false);
 					//~ case '.') {
@@ -717,26 +733,12 @@ class Bot {
 						return false;
 				}
 
+			case STATE_VOID: // Заглушка;
+				return false;
+
 			default:
 				return false;
 		}
-		
-		//~ if ($user['state'] == STATE_VOID) {;
-			//~ // Заглушка;
-			//~ return false;
-		
-		//~ if ($user['state'] == STATE_SELECT_COURSE) {
-			//~ // После "На каком ты курсе?" при регистрации;
-			//~ if (!(is_numeric($text) && 1 <= intval($text) && intval($text) < 5)) {
-				//~ $this->answerWrongInput($this->vid);
-				//~ return false;
-			//~ }
-			//~ $user['state'] = STATE_VOID;
-			//~ $user['question_progress'] += 1;
-			//~ $this->answerAskStudentGroup($this->vid, $user['question_progress'], $text);
-			//~ return true;
-		//~ }
-		
 		
 		//~ if ($user['state'] == States.enter_login or $user['state'] == States.enter_login_after_profile) {;
 			//~ // Ввод логина;
