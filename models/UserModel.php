@@ -25,10 +25,11 @@ class UserModel extends Model {
 		$db = Database::getConnection();
 		$stm = $db->prepare("
 			UPDATE users
-			SET state=?, type=?, question_progress=?, allows_mail=?, gid=?, journal_login=?, journal_password=?, teacher_id=?"
+			SET state=?, type=?, question_progress=?, allows_mail=?, gid=?, journal_login=?, journal_password=?, teacher_id=?
+			WHERE id=?"
 		);
 		$stm->bind_param(
-			"iiiiissi",
+			"iiiiissii",
 			$user['state'],
 			$user['type'],
 			$user['question_progress'],
@@ -36,7 +37,8 @@ class UserModel extends Model {
 			$user['gid'],
 			$user['journal_login'],
 			$user['journal_password'],
-			$user['teacher_id']
+			$user['teacher_id'],
+			$user['id']
 		);
 		$stm->execute();
 	}
