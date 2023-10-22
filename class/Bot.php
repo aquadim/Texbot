@@ -715,7 +715,7 @@ class Bot {
 					$user['type'] = 1;
 					$user['question_progress'] += 1;
 					$user['state'] = STATE_VOID;
-					$this->answerAskCourseNumber($vid, sprintf($this->responses['question_what_is_your_course'], $progress), INTENT_REGISTRATION);
+					$this->answerAskCourseNumber($vid, sprintf($this->responses['question_what_is_your_course'], $user['progress']), INTENT_REGISTRATION);
 					return true;
 				} else if ($text == 'Нет') {
 					// Пользователь - преподаватель;
