@@ -70,4 +70,27 @@ class PairModel extends Model {
 		array_unshift($out, array("Время", "Пара", "Место проведения"));
 		return $out;
 	}
+
+	// Возвращает данные для показа в функции расписания преподавателя
+	public static function getPairsOfTeacher($date, $teacher_id) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("
+			SELECT
+				TIME_FORMAT(pairs.ptime, '%H:%i'),
+				pair_names.name,
+				pair_places.place,
+				CONCAT(groups.course, ' ', groups.spec)
+			FROM pairs
+				LEFT JOIN schedules ON schedules.id = pairs.schedule_id
+				LEFT JOIN pair_names ON pairs.name = pair_names.id
+				LEFT JOIN pair_places ON pair_places.pair_id = pairs.id
+				LEFT JOIN groups ON groups.id = schedules.gid
+			WHERE pair_places.teacher_id=? AND schedules.day=?
+			ORDER BY pairs.ptime");
+		$stm->bind_param("is", $teacher_id, $date);
+		$stm->execute();
+		$out = $stm->get_result()->fetch_all(MYSQLI_NUM);
+		array_unshift($out, array("Время", "Пара", "Место проведения", "Группа"));
+		return $out;
+	}
 }

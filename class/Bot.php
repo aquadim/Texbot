@@ -12,7 +12,7 @@ class Bot {
 		$this->responses = array(
 			"hi1"=> "Привет, я - Техбот. Моя задача - облегчить твою жизнь, но, для начала, мне нужно задать несколько вопросов",
 			"hi2"=> "Ознакомься с условиями использования прежде чем использовать мои функции",
-			"tos"=> "1. Я могу ошибаться, ведь я всего лишь программный код\n2. Разработчики и администрация не отвечают за возможный ущерб, причинённый ошибкой в функции, ведь они не могут знать мгновенно что произошёл сбой\n3. Использование моих функций абсолютно бесплатное и ни к чему вас не обязывает\n4. Сторонние клиенты ВКонтакте не поддерживаются",
+			"tos"=> "===УСЛОВИЯ ИСПОЛЬЗОВАНИЯ===\n1. Я могу ошибаться, ведь я всего лишь программный код\n2. Разработчики и администрация не отвечают за возможный ущерб, причинённый ошибкой в функции, ведь они не могут знать мгновенно что произошёл сбой\n3. Использование моих функций абсолютно бесплатное и ни к чему вас не обязывает\n4. Сторонние клиенты ВКонтакте не поддерживаются",
 			"question_are_you_student"=> "%d. Ты студент?",
 			"question-who-are-you"=> "%d. Выбери себя из списка",
 			"question-who-are-you-no-number"=> "Выбери себя из списка",
@@ -27,17 +27,17 @@ class Bot {
 			"done"=> "Готово!",
 			"returning"=> "Возвращаемся",
 			"get-next-student"=> "Остаётся %s %s до начала пары %s. Начало в %s (%s)",
-			"get-next-teacher"=> "Остаётся {0} {1} до начала пары {2}. Начало в {3} с группой {4} в {5}",
+			"get-next-teacher"=> "Остаётся %s %s до начала пары %s. Начало в %s с группой %s в %s",
 			"get-next-fail"=> "Не удалось узнать какая пара будет следующей",
-			"select-teacher"=> "Выбери преподавателя (стр. {0}/{1})",
+			"select-teacher"=> "Выбери преподавателя (стр. %d/%d)",
 			"select-course"=> "Выбери курс группы",
 			"select-group"=> "Выбери специальность группы",
 			"no-data"=> "❌ Нет данных",
 			"bells-schedule"=> "Звонки в понедельник:\n1 пара: 8:00 - 9:35 (перерыв в 8:45)\n2 пара: 9:45 - 11:20 (перерыв в 10:30)\nКл час: 11:30 - 12:15\nОбед: 12:15-13:00\n3 пара: 13:00 - 14:35 (перерыв в 13:45)\n4 пара: 14:45 - 16:20 (перерыв в 15:30)\n5 пара: 16:30 - 18:05 (перерыв в 17:15).\n\nЗвонки со вторника по пятницу\n1 пара: 8:00 - 9:35 (перерыв в 8:45)\n2 пара: 9:45 - 11:20 (перерыв в 10:30)\nОбед: 11:20 - 12:20\n3 пара: 12:20 - 13:55 (перерыв в 13:05)\n4 пара: 14:05 - 15:40 (перерыв в 14:50)\n5 пара: 15:50 - 17:25 (перерыв в 16:35)\n\nЗвонки в субботу\n1 пара: 8:00 - 9:25 (перерыв в 8:40)\n2 пара: 09:35 - 11:00 (перерыв в 10:15)\n3 пара: 11:10 - 12:35 (перерыв в 11:50)\n4 пара: 12:45 - 14:10 (перерыв в 13:25)",
-			"profile-identifier-student"=> "👥 Ваша группа: {0}",
-			"profile-identifier-teacher"=> "👤 Ваша фамилия: {0}",
+			"profile-identifier-student"=> "👥 Ваша группа: %s",
+			"profile-identifier-teacher"=> "👤 Ваша фамилия: %s",
 			"profile-journal-not-filled"=> "\n⚠ Вы не указывали логин и пароль от электронного журнала",
-			"profile-journal-filled"=> "\n🆔 Логин, используемый для сбора ваших оценок - {0}",
+			"profile-journal-filled"=> "\n🆔 Логин, используемый для сбора ваших оценок - %s",
 			"profile-mail-allowed"=> "\n✅ Вы разрешили присылать вам рассылочные сообщения",
 			"profile-mail-not-allowed"=> "\n❌ Вы запретили присылать вам рассылочные сообщения",
 			"type-cabinet"=> "Введи номер кабинета",
@@ -50,7 +50,10 @@ class Bot {
 			"mail-saved"=> "Данные рассылки сохранены, затронуто пользователей: {0}",
 			"mail-disabled"=> "Больше не потревожу! Если снова захочешь получать рассылки - то включить их можно в меню профиля",
 			"stats"=> "Вот HTML разметка, позволющая просмотреть статистику",
-			"grades-working" => "🕓 Терпение, оценки ещё обрабатываются"
+			"grades-working" => "🕓 Терпение, оценки ещё обрабатываются",
+			"credentials-unknown" => "Чтобы получить твои оценки мне нужно узнать логин и пароль от аккаунта в электронном дневнике.\nМожешь ввести их в меню профиля или с помощью этой кнопки",
+			"write-teacher" => "Напиши фамилию преподавателя",
+			"teacher-not-found" => "Преподаватель не найден"
 		);
 
 		$this->wait_responses = array(
@@ -69,11 +72,11 @@ class Bot {
 			"cancel"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"negative","action":{"type":"text","payload":null,"label":"Отмена"}}]]}',
 			"to-hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"На главную"}}]]}',
 			"course_nums"=> '{"one_time":true,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"1"}},{"color":"primary","action":{"type":"text","payload":null,"label":"2"}}],[{"color":"primary","action":{"type":"text","payload":null,"label":"3"}},{"color":"primary","action":{"type":"text","payload":null,"label":"4"}}]]}',
-			"tos"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"primary","action":{"type":"text","payload":"{\"type\":1}","label":"Показать условия использования"}}]]}',
-			"unsubscribe"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"negative","action":{"type":"text","payload":"{\"type\":9}","label":"Запретить рассылки"}}]]}',
+			"tos"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"primary","action":{"type":"callback","payload":"{\"type\":1}","label":"Показать условия использования"}}]]}',
+			"unsubscribe"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"negative","action":{"type":"callback","payload":"{\"type\":9}","label":"Запретить рассылки"}}]]}',
 			"stud_hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Расписание"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Оценки"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Что дальше?"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Где преподаватель?"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Расписание группы"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Звонки"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Профиль"}}]]}',
 			"teacher_hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Расписание"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Кабинеты"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Что дальше?"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Где преподаватель?"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Расписание группы"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Звонки"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Профиль"}}]]}',
-			"enter_journal_credentials"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"primary","action":{"type":"text","payload":"{\"type\":3,\"after_profile\":false}","label":"Ввести логин и пароль"}}]]}',
+			"enter_journal_credentials"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"primary","action":{"type":"callback","payload":"{\"type\":3,\"after_profile\":false}","label":"Ввести логин и пароль"}}]]}',
 			"empty"=> '{"one_time":false,"inline":false,"buttons":[]}',
 			"admin-hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Рассылка"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Статистика"}},{"color":"negative","action":{"type":"text","payload":null,"label":"Выход"}}]]}'
 		);
@@ -84,6 +87,11 @@ class Bot {
 		// Проверка секретного ключа
 		if ($this->data->secret != $_ENV['vk_secret']) {
 			exit();
+		}
+
+		// Если событие - подтверждение сервера, то нужно вернуть строку подтверждения
+		if ($this->data->type == "confirmation") {
+			exit($_ENV["confirmation_token"]);
 		}
 
 		// Закрываем соединение для того чтобы скрипт мог работать больше чем 10 секунд
@@ -105,7 +113,6 @@ class Bot {
 		switch ($this->data->type) {
 			case "message_new":
 				$this->vid = $this->data->object->message->from_id;
-				$this->msg_id = $this->data->object->message->id;
 				break;
 			case "message_event":
 				$this->vid = $this->data->object->peer_id;
@@ -117,6 +124,7 @@ class Bot {
 
 		set_exception_handler(array($this, "reportException"));
 		set_error_handler(array($this, "reportError"), E_ALL);
+
 	}
 
 	#region Работа с API ВКонтакте
@@ -126,15 +134,17 @@ class Bot {
 	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : int {
 		$params = array(
 			"peer_id" => $vid,
-			"message" => "(".$this->msg_id.")".$msg,
+			"message" => $msg,
 			"keyboard" => $keyboard,
 			"attachment" => $attachment,
 			"random_id" => 0,
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		$data = file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
-		return json_decode($data)->response;
+		$fp = fopen(vk_api_endpoint."messages.send?".http_build_query($params), 'r');
+		$data = json_decode(stream_get_contents($fp));
+		fclose($fp);
+		return $data->response;
 	}
 
 	// Изменение сообщения
@@ -149,19 +159,6 @@ class Bot {
 			"v" => "5.131"
 		);
 		$fp = fopen(vk_api_endpoint."messages.edit?".http_build_query($params), 'r');
-		fclose($fp);
-	}
-
-	// Отправляет ответ на callback-запрос пользователя
-	private function answerCallbackVk() : void {
-		$params = array(
-			"event_id" => $this->data->event_id,
-			"user_id" => $this->data->object->user_id,
-			"peer_id" => $this->data->object->peer_id,
-			"access_token" => $_ENV['vk_token'],
-			"v" => "5.131"
-		);
-		$fp = fopen(vk_api_endpoint."messages.sendMessageEventAnswer?".http_build_query($params), 'r');
 		fclose($fp);
 	}
 
@@ -218,10 +215,14 @@ class Bot {
 			$added_in_row++;
 			if ($added_in_row == 3) { // 3 кнопки на строку
 				$current_row++;
+				if ($current_row == 3) { // Больше кнопок добавлять нельзя
+					break;
+				}
 				$buttons[$current_row] = array();
 				$added_in_row = 0;
 			}
 		}
+		
 		return $this->getKeyboard(true, true, $buttons);
 	}
 
@@ -258,6 +259,38 @@ class Bot {
 
 		return $this->getKeyboard(false, true, $buttons);
 	}
+
+	// Создаёт клавиатуру настроек профиля
+	private function makeProfileKeyboard($user) {
+		$buttons = [];
+
+		if ($user['type'] == 1) {
+			$row = [$this->getKeyboardButton("Сменить группу", 'primary', 'callback', array('type'=>PAYLOAD_PROFILE_ACTION, 'intent' => INTENT_EDIT_STUDENT))];
+
+			if ($user['journal_login'] == null) {
+				$label = 'Ввести логин и пароль';
+				$color = 'positive';
+			} else {
+				$label = 'Изменить логин и пароль';
+				$color = 'primary';
+			}
+			$row[] = $this->getKeyboardButton($label, $color, 'callback', array('type'=>PAYLOAD_ENTER_CREDENTIALS, 'after_profile'=>true));
+			$buttons[] = $row;
+		}
+
+		if ($user['allows_mail']) {
+			$label = 'Запретить рассылку';
+			$color = 'negative';
+		} else {
+			$label = 'Разрешить рассылки';
+			$color = 'positive';
+		}
+		$buttons[] = [$this->getKeyboardButton($label, $color, 'callback', array('type'=>PAYLOAD_TOGGLE_MAIL))];
+
+		return $this->getKeyboard(false, true, $buttons);
+
+		// TODO: смена типа аккаунта
+	}
 	#endregion
 
 	#region Ответы Техбота
@@ -279,12 +312,21 @@ class Bot {
 	}
 
 	// Вопрос: На каком ты курсе?
-	private function answerAskCourseNumber($vid, $progress) {
-		$this->sendMessageVk(
-			$vid,
-			sprintf($this->responses['question_what_is_your_course'], $progress),
-			$this->makeKeyboardSelectCourse(INTENT_REGISTRATION)
-		);
+	private function answerAskCourseNumber($vid, $text, $intent, $edit=false, $msg_id=null) {
+		if (!$edit) {
+			$this->sendMessageVk(
+				$vid,
+				$text,
+				$this->makeKeyboardSelectCourse($intent)
+			);	
+		} else {
+			$this->editMessageVk(
+				$vid,
+				$msg_id,
+				$text,
+				$this->makeKeyboardSelectCourse($intent)
+			);
+		}
 	}
 
 	// Вопрос: Какая из этих групп твоя?
@@ -350,19 +392,39 @@ class Bot {
 			return;
 		}
 
-		if ($response['photo_id'] !== null) { // Расписание кэшировано, отправляем сейчас
-			$this->sendMessageVk($vid, null, null, 'photo-'.$_ENV['public_id'].'_'+$response['photo_id']);
+		if ($response['photo'] != null) { // Расписание кэшировано, отправляем сейчас
+			$this->editMessageVk($vid, $msg_id, null, null, $response['photo']);
 			return;
 		}
 
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
 		$data = PairModel::getPairsOfSchedule($response["id"]);
-		$gen = new GroupScheduleGenerator(null, $data, "Расписание.");
+		$gen = new GroupScheduleGenerator(null, $data, "Расписание группы ".GroupModel::getGroupName($gid).' на '.date('Y-m-d'));
 		$attachment = $gen->run();
 		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
-		// TODO: кэшировать photo_id
+		ScheduleModel::createCache($response['id'], $attachment);
+	}
+
+	// Показ расписания преподавателя
+	private function answerShowScheduleForTeacher($vid, $date, $teacher_id, $msg_id) {
+		// Получить кэшированное расписание
+		$response = TeacherScheduleModel::getCached($date, $teacher_id);
+
+		if ($response != false) { // Кэшированное расписание есть
+			$this->editMessageVk($vid, $msg_id, null, null, $response['photo']);
+			return;
+		}
+
+		$this->answerEditWait($vid, $msg_id);
+		$data = PairModel::getPairsOfTeacher($date, $teacher_id);
+		$teacher = TeacherModel::getById($teacher_id);
+		$gen = new TeacherScheduleGenerator(null, $data, "Расписание преподавателя ".$teacher['surname'].' на '.date('Y-m-d'));
+		$attachment = $gen->run();
+		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
+
+		TeacherScheduleModel::create($date, $teacher_id, $attachment);
 	}
 
 	//~ private function answerShowScheduleForTeacher($vid, $msg_id, $date, $teacher_id) {
@@ -389,10 +451,14 @@ class Bot {
 
 	// Показ оценок
 	private function answerShowGrades($vid, $user_id, $login, $password) {
+		if ($login == null || $password == null) {
+			$this->sendMessageVk($vid, $this->responses['credentials-unknown'], $this->keyboards['enter_journal_credentials']);
+			return;
+		}
 		// Проверяем если пользователь уже получал оценки недавно
 		$response = GradesModel::getRecent($user_id);
 		if ($response) { // Как минимум 10 минут назад были запрошены оценки
-			if (!isset($response['photo_id'])) { // Оценки ещё собираются
+			if ($response['photo'] == null) { // Оценки ещё собираются
 				$this->sendMessageVk($vid, $this->responses['grades-working']);
 			} else {
 				$this->sendMessageVk($vid, null, null, $response['photo']);
@@ -412,29 +478,29 @@ class Bot {
 		GradesModel::create($user_id, $attachment);
 	}
 
-	//~ // Спрашиваем логин журнала
-	//~ private function answerAskJournalLogin($vid) {
-		//~ $this->sendMessageVk($vid, $this->responses['enter_login'], $this->keyboards['cancel']);
-	//~ }
+	// Спрашиваем логин журнала
+	private function answerAskJournalLogin($vid) {
+		$this->sendMessageVk($vid, $this->responses['enter_login'], $this->keyboards['cancel']);
+	}
 
-	//~ // Спрашиваем пароль журнала
-	//~ private function answerAskJournalPassword($vid) {
-		//~ $this->sendMessageVk($vid, $this->responses['enter_password'], $this->keyboards['cancel']);
-	//~ }
+	// Спрашиваем пароль журнала
+	private function answerAskJournalPassword($vid) {
+		$this->sendMessageVk($vid, $this->responses['enter_password'], $this->keyboards['cancel']);
+	}
 
-	//~ // Ответ: Готово!
-	//~ private function answerDone($vid) {
-		//~ $this->sendMessageVk($vid, $this->responses['done']);
-	//~ }
+	// Ответ: Готово!
+	private function answerDone($vid) {
+		$this->sendMessageVk($vid, $this->responses['done']);
+	}
 
-	//~ // Возвращает пользователя в хаб
-	//~ private function answerToHub($vid, $user_type, $text) {
-		//~ if ($user_type == 1) {
-			//~ $this->sendMessageVk($vid, $text, $this->keyboards['stud_hub']);
-		//~ } else {
-			//~ $this->sendMessageVk($vid, $text, $this->keyboards['teacher_hub']);
-		//~ }
-	//~ }
+	// Возвращает пользователя в хаб
+	private function answerToHub($vid, $user_type, $text) {
+		if ($user_type == 1) {
+			$this->sendMessageVk($vid, $text, $this->keyboards['stud_hub']);
+		} else {
+			$this->sendMessageVk($vid, $text, $this->keyboards['teacher_hub']);
+		}
+	}
 
 	private function answerWhatsNext($vid, $target, $for_teacher) {
 		// Отвечает какая пара следующая
@@ -474,12 +540,7 @@ class Bot {
 
 		//~ for index, k in enumerate(keyboards) {
 			//~ $this->sendMessageVk($vid, $this->responses['select-teacher'].format(index + 1, amount), k)
-
-	//~ private function answerUpdateHub($vid, user_type) {
-		//~ // Присылает клавиатуру с меню
-		//~ if (user_type == 1{
-			//~ $this->sendMessageVk($vid, $this->responses['updating-menu'], $this->keyboards['stud_hub'])
-
+			
 	//~ // Отправляет сообщение с выбором курса
 	//~ private function answerSelectGroupCourse($vid, $msg_id, $intent, $edit) {
 		//~ $keyboard = $this->keyboardSelectCourse($msg_id, $intent);
@@ -491,11 +552,11 @@ class Bot {
 	//~ }
 
 	// Отправляет сообщение с выбором группы
-	private function answerSelectGroupSpec($msg_id, $course, $intent) {
+	private function answerSelectGroupSpec($vid, $msg_id, $course, $intent) {
 		$groups = GroupModel::getAllByCourse($course);
 		$this->editMessageVk(
+			$vid,
 			$msg_id,
-			$this->vid,
 			$this->responses['select-group'],
 			$this->makeKeyboardSelectGroup($groups, $intent)
 		);
@@ -506,37 +567,37 @@ class Bot {
 		$this->sendMessageVk($vid, $this->responses['bells-schedule']);
 	}
 
-	//~ private function answerShowProfile($vid, msg_id, user, edit) {
-		//~ // Отправляет сообщение профиля
-		//~ message = ""
+	// Отправляет сообщение с настройкой профиля
+	// Если $edit - true, то Техбот будет редактировать сообщение с id $msg_id
+	private function answerShowProfile($vid, $user, $edit, $msg_id=null) {
+		$message = "";
 
-		//~ if (user['type'] == 1{
-			//~ # Студент
-			//~ message += $this->responses['profile-identifier-student'].format(database.getGroupName(user['gid']))
-			//~ if (user['journal_login'] == null{
-				//~ message += $this->responses['profile-journal-not-filled']
-			//~ else{
-				//~ message += $this->responses['profile-journal-filled'].format(user['journal_login'])
-		//~ else{
-			//~ # Преподаватель
-			//~ message += $this->responses['profile-identifier-teacher'].format(database.getTeacherSurname(user['teacher_id']))
+		if ($user['type'] == 1) { // Студент
+			$message .= sprintf($this->responses['profile-identifier-student'], GroupModel::getGroupName($user['gid']));
+			if ($user['journal_login'] == null) {
+				$message .= $this->responses['profile-journal-not-filled'];
+			} else {
+				$message .= sprintf($this->responses['profile-journal-filled'], $user['journal_login']);
+			}
+		} else { // Преподаватель
+			$message .= sprintf($this->responses['profile-identifier-teacher'], TeacherModel::getById($user['teacher_id']['surname']));
+		}
 
-		//~ if (user['allows_mail'] == 1{
-			//~ message += $this->responses['profile-mail-allowed']
-		//~ else{
-			//~ message += $this->responses['profile-mail-not-allowed']
+		if ($user['allows_mail']) {
+			$message .= $this->responses['profile-mail-allowed'];
+		} else {
+			$message .= $this->responses['profile-mail-not-allowed'];
+		}
 
-		//~ keyboard = self.makeProfileKeyboard(msg_id, user)
+		$keyboard = $this->makeProfileKeyboard($user);
 
-		//~ if (edit{
-			//~ api.edit($vid, msg_id, message, keyboard)
-		//~ else{
-			//~ $this->sendMessageVk($vid, message, keyboard)
-
-	//~ private function answerAskTeacherSignature($vid, question_progress) {
-		//~ // Просит преподавателя выбрать себя из списка
-		//~ return $this->sendMessageVk($vid, $this->responses['question-who-are-you'].format(question_progress), $this->keyboards['empty'])
-
+		if ($edit) {
+			$this->editMessageVk($vid, $msg_id, $message, $keyboard);
+		} else {
+			$this->sendMessageVk($vid, $message, $keyboard);
+		}
+	}
+	
 	//~ private function answerAskCabNumber($vid) {
 		//~ // Просит преподавателя написать кабинет
 		//~ $this->sendMessageVk($vid, $this->responses['type-cabinet'], $this->keyboards['cancel'])
@@ -562,10 +623,6 @@ class Bot {
 		//~ ))
 		//~ self.tasks[-1].start()
 
-	//~ private function answerAskTeacherWhenEditing($vid) {
-		//~ // Просит преподавателя выбрать себя когда он переходит из студента
-		//~ return $this->sendMessageVk($vid, $this->responses['question-who-are-you-no-number'])
-
 	//~ private function answerOnStartedEdit($vid) {
 		//~ // Нужна для очистки клавиатуры при старте смены типа профиля
 		//~ return $this->sendMessageVk($vid, $this->responses['started-editing'], $this->keyboards['empty'])
@@ -586,9 +643,15 @@ class Bot {
 		//~ // Уведомляет об отключении рассылки
 		//~ $this->sendMessageVk($vid, $this->responses['mail-disabled'])
 
-	//~ private function answerShowStats($vid, file_id) {
-		//~ // Отправляет файл со статистикой
-		//~ $this->sendMessageVk($vid, $this->responses['stats'], null, 'doc'+str($vid)+'_'+str(file_id))
+	// Просьба написать фамилию преподавателя
+	private function answerAskSelectTeacher($vid) {
+		$this->sendMessageVk($vid, $this->responses['write-teacher'], $this->keyboards['cancel']);
+	}
+
+	// "Не найдено преподавателя"
+	private function answerTeacherNotFound($vid) {
+		$this->sendMessageVk($vid, $this->responses['teacher-not-found']);
+	}
 
 	#endregion
 
@@ -652,7 +715,7 @@ class Bot {
 					$user['type'] = 1;
 					$user['question_progress'] += 1;
 					$user['state'] = STATE_VOID;
-					$this->answerAskCourseNumber($vid, $user['question_progress']);
+					$this->answerAskCourseNumber($vid, sprintf($this->responses['question_what_is_your_course'], $progress), INTENT_REGISTRATION);
 					return true;
 				} else if ($text == 'Нет') {
 					// Пользователь - преподаватель;
@@ -711,27 +774,77 @@ class Bot {
 						//~ $this->answerAskCabNumber($this->vid);
 						//~ database.addStatRecord($user['gid'], $user['type'], 7);
 						//~ return true;
-					//~ case 'Где преподаватель?') {
-						//~ $this->answerSelectTeacher($this->vid, $msg_id + 1, INTENT_TEACHER_RASP_VIEW);
-						//~ database.addStatRecord($user['gid'], $user['type'], 4);
-					//~ case 'Расписание группы') {
-						//~ $this->answerSelectGroupCourse($this->vid, $msg_id + 1, INTENT_STUD_RASP_VIEW, false);
-						//~ database.addStatRecord($user['gid'], $user['type'], 5);
+					case 'Где преподаватель?':
+						$user['state'] = STATE_ENTER_TEACHER;
+						$this->answerAskSelectTeacher($this->vid);
+						StatModel::create($user['gid'], $user['type'], FUNC_WHERE_TEACHER);
+						return true;
+					case 'Расписание группы':
+						$this->answerAskCourseNumber($this->vid, $this->responses['select-course'], INTENT_STUD_RASP_VIEW);
+						StatModel::create($user['gid'], $user['type'], FUNC_OTHER_RASP);
+					case 'Профиль':
+						$this->answerShowProfile($this->vid, $user, false);
+						return false;
 					case 'Звонки':
 						$this->answerBells($this->vid);
 						StatModel::create($user['gid'], $user['type'], FUNC_BELLS);
-					//~ case 'Профиль') {
-						//~ $this->answerShowProfile($this->vid, $msg_id + 1, $user, false);
-					//~ case '.') {
-						//~ $this->answerUpdateHub($this->vid, $user['type']);
-					//~ case 'admin' and $user['admin']) {
-						//~ // "Оно находится прямо рядом с тобой и ты его даже не замечаешь" - Майк, из сериала "Очень странные дела";
-						//~ $user['state'] = States.admin;
-						//~ $this->answerShowAdminPanel($this->vid);
-						//~ return true;
+						return false;
+					case '.':
+						$this->answerToHub($vid, $user['type'], $this->responses['updating-menu']);
+						return false;
 					default:
 						return false;
 				}
+
+			case STATE_ENTER_LOGIN:
+			case STATE_ENTER_LOGIN_AFTER_PROFILE: // Ввод логина электронного дневника
+				if ($this->checkIfCancelled($text, $user)) return true;
+
+				$user['journal_login'] = $text;
+
+				if ($user['state'] == STATE_ENTER_LOGIN) {
+					$user['state'] = STATE_ENTER_PASSWORD;
+				} else {
+					$user['state'] = STATE_ENTER_PASSWORD_AFTER_PROFILE;
+				}
+
+				$this->answerAskJournalPassword($this->vid);
+				return true;
+
+			case STATE_ENTER_PASSWORD:
+			case STATE_ENTER_PASSWORD_AFTER_PROFILE: // Ввод пароля электронного дневника
+				if ($this->checkIfCancelled($text, $user)) return true;
+
+				$user['journal_password'] = sha1($text); // Электронный дневник хранит пароли в sha1. Да...
+				$user['state'] = STATE_HUB;
+
+				$this->answerDone($this->vid);
+				$this->answerToHub($this->vid, $user['type'], $this->responses['returning']);
+				if ($user['state'] == STATE_ENTER_LOGIN_AFTER_PROFILE) {
+					$this->answerShowProfile($this->vid, $user, false);
+				}
+
+				return true;
+
+			case STATE_ENTER_TEACHER: // Ввод преподавателя (для функции "Где преподаватель")
+				if ($this->checkIfCancelled($text, $user)) return true;
+
+				// Неверный формат фамилии мы преобразовываем.
+				// 1. Начинается с большой буквы
+				$text = mb_strtoupper(mb_substr($text, 0, 1)) . mb_substr($text, 1);
+				// 2. Ё заменяется на Е
+				$text = str_replace('ё', 'е', $text);
+
+				$teacher = TeacherModel::getBySurname($text);
+				if (!$teacher) {
+					$this->answerTeacherNotFound($this->vid);
+				} else {
+					$this->answerSelectDate($this->vid, $teacher['id'], INTENT_TEACHER_RASP_VIEW);
+				}
+
+				$this->answerToHub($this->vid, $user['type'], $this->responses['returning']);
+				$user['state'] = STATE_HUB;
+				return true;
 
 			case STATE_VOID: // Заглушка;
 				return false;
@@ -739,32 +852,6 @@ class Bot {
 			default:
 				return false;
 		}
-		
-		//~ if ($user['state'] == States.enter_login or $user['state'] == States.enter_login_after_profile) {;
-			//~ // Ввод логина;
-			//~ if ($this->checkIfCancelled($text, $user)) {;
-				//~ return true;
-			//~ $user['journal_login'] = $text;
-			//~ if ($user['state'] == States.enter_login) {;
-				//~ $user['state'] = States.enter_password;
-			//~ else { {;
-				//~ $user['state'] = States.enter_password_after_profile;
-			//~ $this->answerAskJournalPassword($this->vid);
-			//~ return true;
-
-		//~ if ($user['state'] == States.enter_password or $user['state'] == States.enter_password_after_profile) {;
-			//~ // Ввод пароля;
-			//~ if ($this->checkIfCancelled($text, $user)) {;
-				//~ return true;
-			//~ $user['journal_password'] = hashlib.sha1(bytes($text, "utf-8")).hexdigest();
-
-			//~ $this->answerDone($this->vid);
-			//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
-			//~ if ($user['state'] == States.enter_password_after_profile) {;
-				//~ $this->answerShowProfile($this->vid, $msg_id + 1, $user, false);
-
-			//~ $user['state'] = STATE_HUB;
-			//~ return true;
 
 		//~ if ($user['state'] == States.enter_cab) {;
 			//~ // Ввод кабинета;
@@ -774,65 +861,14 @@ class Bot {
 			//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
 			//~ $this->answerSelectDate($this->vid, $msg_id + 1, $text, INTENT_VIEW_CABINETS);
 			//~ return true;
-
-		//~ if ($user['state'] == States.admin) {;
-			//~ if ($text == 'Выход') {;
-				//~ $user['state'] = STATE_HUB;
-				//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
-				//~ return true;
-
-			//~ if ($text == 'Рассылка') {;
-				//~ $user['state'] = States.mail_input_target;
-				//~ database.addMailRecord($user['id']);
-				//~ $this->answerAskMailTarget($this->vid);
-				//~ return true;
-
-			//~ if ($text == 'Статистика') {;
-				//~ // Генерируем HTML;
-				//~ path = $this->generateHtmlStats();
-				//~ // Загружаем документ;
-				//~ doc_id = api.uploadDocument($this->vid, path);
-				//~ $this->answerShowStats($this->vid, doc_id);
-		//~ if ($user['state'] == States.mail_input_target) {;
-			//~ mail_id = database.getMostRecentMailRecord($user['id']);
-			//~ if ($text == 'Отмена') {;
-				//~ $user['state'] = States.admin;
-				//~ $this->answerToAdminHub($this->vid, $this->answers['returning']);
-				//~ database.deleteMail(mail_id);
-				//~ return true;
-			//~ $user['state'] = States.mail_input_message;
-			//~ database.updateMail(mail_id, 'target', $text);
-			//~ $this->answerAskMailMessage($this->vid);
-			//~ return true;
-		//~ if ($user['state'] == States.mail_input_message) {;
-			//~ mail_id = database.getMostRecentMailRecord($user['id']);
-			//~ $user['state'] = States.admin;
-			//~ if ($text == 'Отмена') {;
-				//~ database.deleteMail(mail_id);
-				//~ $this->answerToAdminHub($this->vid, $this->answers['returning']);
-			//~ else { {;
-				//~ database.updateMail(mail_id, 'message', $text);
-				//~ api.tgAlert(;
-					//~ 'Автор рассылки) { https) {//vk.com/id'+str($user['vk_id'])+'. Текст) { '+$text,;
-					//~ 'Создана рассылка в техботе';
-				//~ );
-				//~ mail_info = database.getMailInfo(mail_id);
-				//~ mail_$users = database.getUsersByMask(mail_info['target']);
-				//~ api.massSend(;
-					//~ mail_$users,;
-					//~ mail_info['message'],;
-					//~ $this->keyboards['unsubscribe'];
-				//~ );
-				//~ $this->answerToAdminHub($this->vid, $this->answers['mail-saved'].format(len(mail_$users)));
-			//~ return true
 	}
 
 	// Обработка сообщений обратного вызова. Возвращает true, если необходимо обновить профиль пользователя
 	private function handleCallbackMessage($data, $msg_id, &$user) : bool {
 		switch ($data->type) {
 			case PAYLOAD_SELECT_COURSE: // Выбран курс. Намерение передаётся дальше
-				$this->answerSelectGroupSpec($msg_id, $data->num, $data->intent);
-				return true;
+				$this->answerSelectGroupSpec($this->vid, $msg_id, $data->num, $data->intent);
+				return false;
 
 			case PAYLOAD_SELECT_GROUP: // Выбрана группа
 				switch ($data->intent) {
@@ -844,12 +880,12 @@ class Bot {
 						return true;
 
 					case INTENT_STUD_RASP_VIEW: // Выполняется просмотр расписания
-						$this->answerSelectDate(vid, data['msg_id'], data['gid'], INTENT_STUD_RASP_VIEW, true);
+						$this->answerSelectDate($this->vid, $data->gid, INTENT_STUD_RASP_VIEW, true, $msg_id);
 						return false;
 
 					case INTENT_EDIT_STUDENT: // Изменение группы студента
-						$user['gid'] = data['gid'];
-						$this->answerShowProfile(vid, data['msg_id'], user, true);
+						$user['gid'] = $data->gid;
+						$this->answerShowProfile($this->vid, $user, true, $msg_id);
 						return true;
 
 					case INTENT_EDIT_TYPE: // Преподаватель становится студентом
@@ -871,7 +907,7 @@ class Bot {
 						return false;
 
 					case INTENT_TEACHER_RASP_VIEW: // Просмотр расписания преподавателя
-						$this->answerShowScheduleForTeacher(vid, data['msg_id'], data['date'], data['target']);
+						$this->answerShowScheduleForTeacher($this->vid, $data->date, $data->target, $msg_id);
 						return false;
 
 					case INTENT_VIEW_CABINETS: // Просмотр занятости кабинетов
@@ -879,28 +915,42 @@ class Bot {
 						return false;
 				}
 
+			case PAYLOAD_SHOW_TERMS: // Вывод условий использования
+				$this->answerShowTerms($this->vid);
+				return false;
+
+			case PAYLOAD_TOGGLE_MAIL: // Отказ/соглашение на принятие рассылки (в профиле)
+				if ($user['allows_mail']) {
+					$user['allows_mail'] = false;
+				} else {
+					$user['allows_mail'] = true;
+				}
+				$this->answerShowProfile($this->vid, $user, true, $msg_id);
+				return true;
+
+			case PAYLOAD_PROFILE_ACTION:
+				switch ($data->intent) {
+					case INTENT_EDIT_STUDENT: // Показать клавиатуру выбора курса для того чтобы студент мог изменить свою группу
+						$this->answerAskCourseNumber($this->vid, $this->responses['select-course'], INTENT_EDIT_STUDENT, true, $msg_id);
+						return false;
+
+					default:
+						return false;
+				}
+
+			case PAYLOAD_ENTER_CREDENTIALS:
+				if ($data->after_profile == false) {
+					$user['state'] = STATE_ENTER_LOGIN;
+				} else {
+					$user['state'] = STATE_ENTER_LOGIN_AFTER_PROFILE;
+				}
+				$this->answerAskJournalLogin($this->vid);
+				return true;
+
 			default:
 				return false;
 		}
 		/*
-		
-
-		if data['type'] == PayloadTypes.show_terms:
-			# Показ условий использования
-			self.answerShowTerms(vid)
-			return false
-
-	
-
-		if data['type'] == PayloadTypes.enter_credentials:
-			# Переводим пользователя на ввод логина и пароля дневника
-			if data['after_profile'] == false:
-				user['state'] = States.enter_login
-			else:
-				user['state'] = States.enter_login_after_profile
-			self.answerAskJournalLogin(vid)
-			return true
-
 		if data['type'] == PayloadTypes.select_teacher:
 			# Удаляем прошлые сообщения
 			to_delete = ''
@@ -985,11 +1035,6 @@ class Bot {
 
 		switch ($this->data->type) {
 
-			// Подтверждение сервера
-			case "confirmation":
-				exit($_ENV['confirmation_token']);
-				break;
-
 			case "message_new":
 				$text = $this->data->object->message->text;
 				if (strlen($text) == 0) break; // Нет текста в сообщении - не обрабатываем
@@ -1006,7 +1051,6 @@ class Bot {
 				// Обработка сообщения
 				$need_update = $this->handleCallbackMessage($payload, $msg_id, $user);
 				if ($need_update) UserModel::save($user);
-				$this->answerCallbackVk();
 				break;
 
 			default:
@@ -1104,5 +1148,16 @@ class Bot {
 		curl_close($grades);
 
 		return $output;
+	}
+
+	// Проверяет если пользователь запросил отмену. Если да - то возвращаем его в хаб
+	private function checkIfCancelled($text, &$user) {
+		if ($text == 'Отмена') {
+			$user['state'] = STATE_HUB;
+ 			$this->answerToHub($user['vk_id'], $user['type'], $this->responses['returning']);
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

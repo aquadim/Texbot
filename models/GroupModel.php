@@ -25,4 +25,13 @@ class GroupModel extends Model {
 		$stm->execute();
 		return $stm->get_result();
 	}
+
+	// Возвращает имя группы
+	public static function getGroupName(int $gid) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("SELECT CONCAT(groups.course, ' ', groups.spec) AS name FROM groups WHERE id=?");
+		$stm->bind_param("i", $gid);
+		$stm->execute();
+		return $stm->get_result()->fetch_array()['name'];
+	}
 }

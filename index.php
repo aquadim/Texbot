@@ -5,6 +5,7 @@ require_once "vendor/autoload.php";
 require_once __DIR__."/class/Bot.php";
 require_once __DIR__."/class/TableGenerator.php";
 require_once __DIR__."/class/GroupScheduleGenerator.php";
+require_once __DIR__."/class/TeacherScheduleGenerator.php";
 require_once __DIR__."/class/GradesGenerator.php";
 require_once __DIR__."/class/Database.php";
 
@@ -21,6 +22,7 @@ define('STATE_ENTER_PASSWORD', 6);				// Ввод пароля
 define('STATE_ENTER_LOGIN_AFTER_PROFILE', 7);	// Ввод логина, потом ставим 8
 define('STATE_ENTER_PASSWORD_AFTER_PROFILE', 8);// Ввод пароля, потом показываем профиль
 define('STATE_ENTER_CAB', 9);					// Ввод кабинета
+define('STATE_ENTER_TEACHER', 10);				// Ввод преподавателя
 
 // Типы payload
 define('PAYLOAD_SELECT_GROUP', 0);		// Выбор группы
@@ -33,6 +35,7 @@ define('PAYLOAD_EDIT_GROUP', 6); 		// Смена группы
 define('PAYLOAD_TOGGLE_MAIL', 7); 		// Переключение разрешения рассылок
 define('PAYLOAD_EDIT_TYPE', 8); 		// Смена типа аккаунта
 define('PAYLOAD_UNSUBSCRIBE', 9); 		// Запрет рассылки
+define('PAYLOAD_PROFILE_ACTION', 10);	// Действие в профиле 
 
 // Намерения
 define('INTENT_REGISTRATION', 0);		// Для регистрации
@@ -47,6 +50,8 @@ define('FUNC_RASP', 0); // Расписание
 define('FUNC_NEXT', 1); // Что дальше
 define('FUNC_GRADES', 2); // Оценки
 define('FUNC_BELLS', 3); // Звонки
+define('FUNC_OTHER_RASP', 4); // Расписание другой группы
+define('FUNC_WHERE_TEACHER', 5); // Где преподаватель
 
 // Объявление общих переменных
 define('GEN_MONTH_NUM_TO_STR', [9=>"сентября",10=>"октября",11=>"ноября",12=>"декабря",1=>"января",2=>"февраля",3=>"марта",4=>"апреля",5=>"мая",6=>"июня",7=>"июля",8=>"августа"]);
