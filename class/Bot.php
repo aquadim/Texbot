@@ -53,7 +53,8 @@ class Bot {
 			"grades-working" => "🕓 Терпение, оценки ещё обрабатываются",
 			"credentials-unknown" => "Чтобы получить твои оценки мне нужно узнать логин и пароль от аккаунта в электронном дневнике.\nМожешь ввести их в меню профиля или с помощью этой кнопки",
 			"write-teacher" => "Напиши фамилию преподавателя",
-			"teacher-not-found" => "Преподаватель не найден"
+			"teacher-not-found" => "Преподаватель не найден",
+			"grades-fail" => "Не удалось собрать оценки с помощью данных логина и пароля. Пожалуйста перепроверь их правильность, и, если нужно, введи заново"
 		);
 
 		$this->wait_responses = array(
@@ -470,6 +471,10 @@ class Bot {
 
 		// TODO: изменять присланное сообщение, а не присылать новое
 		$data = $this->getGradesData($login, $password);
+		if ($data === false) {
+			$this->sendMessageVk($vid, $this->responses['grades-fail'], $this->keyboards['enter_journal_credentials']);
+			return;
+		}
 		$gen = new GradesGenerator($vid, $data, 'Твои оценки на '.date('Y-m-d H:i'));
 		$attachment = $gen->run();
 		$this->sendMessageVk($vid, null, null, $attachment);
@@ -1102,10 +1107,25 @@ class Bot {
 
 		// Запрос на экспорт оценок
 		$grades = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/journal_och?page=1&marks=1&export=1');
+		$headers = [];
 		curl_setopt($grades, CURLOPT_COOKIEFILE, "");
 		curl_setopt($grades, CURLOPT_SHARE, $sh);
 		curl_setopt($grades, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($grades, CURLOPT_HEADERFUNCTION,
+			function($curl, $header) use (&$headers) { // Собираем ответные заголовки https://stackoverflow.com/a/41135574/15146417
+				$len = strlen($header);
+				$header = explode(':', $header, 2);
+				if (count($header) < 2) // ignore invalid headers
+					return $len;
+				$headers[strtolower(trim($header[0]))][] = trim($header[1]);
+				return $len;
+			});
 		$data = curl_exec($grades);
+
+		if ($headers['content-type'][0] != 'application/x-download') {
+			// Неправильный логин и пароль т.к. этот заголовок неверный
+			return false;
+		}
 
 		// Разрыв сессии с журналом
 		$logout = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/logout');
@@ -1118,6 +1138,7 @@ class Bot {
 		// Данные хранятся в строках с тэгом Row
 		// Первые 3 не содержат оценок, их пропускаем
 		// Последний ряд тоже не содержит оценок, его не обрабатываем
+		// Если XML загрузить не удаётся, то **скорее всего** логин и пароль неверны
 		$doc = new DOMDocument();
 		$doc->loadXML($data);
 		$rows = $doc->getElementsByTagName("Row");
