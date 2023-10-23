@@ -401,7 +401,7 @@ class Bot {
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
 		$data = PairModel::getPairsOfSchedule($response["id"]);
-		$gen = new GroupScheduleGenerator(null, $data, "Расписание группы ".GroupModel::getGroupName($gid).' на '.date('Y-m-d'));
+		$gen = new GroupScheduleGenerator(null, $data, "Расписание группы ".GroupModel::getGroupName($gid).' на '.$date);
 		$attachment = $gen->run();
 		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
@@ -421,7 +421,7 @@ class Bot {
 		$this->answerEditWait($vid, $msg_id);
 		$data = PairModel::getPairsOfTeacher($date, $teacher_id);
 		$teacher = TeacherModel::getById($teacher_id);
-		$gen = new TeacherScheduleGenerator(null, $data, "Расписание преподавателя ".$teacher['surname'].' на '.date('Y-m-d'));
+		$gen = new TeacherScheduleGenerator(null, $data, "Расписание преподавателя ".$teacher['surname'].' на '.$date);
 		$attachment = $gen->run();
 		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
