@@ -7,7 +7,7 @@ require_once __DIR__."/class/TableGenerator.php";
 require_once __DIR__."/class/GroupScheduleGenerator.php";
 require_once __DIR__."/class/TeacherScheduleGenerator.php";
 require_once __DIR__."/class/GradesGenerator.php";
-require_once __DIR__."/class/OccupanсyGenerator.php";
+require_once __DIR__."/class/OccupancyGenerator.php";
 require_once __DIR__."/class/Database.php";
 
 define('vk_api_endpoint', "https://api.vk.com/method/");
