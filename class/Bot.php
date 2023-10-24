@@ -29,7 +29,6 @@ class Bot {
 			"get-next-student"=> "Остаётся %s %s до начала пары %s. Начало в %s (%s)",
 			"get-next-teacher"=> "Остаётся %s %s до начала пары %s. Начало в %s с группой %s в %s",
 			"get-next-fail"=> "Не удалось узнать какая пара будет следующей",
-			"select-teacher"=> "Выбери преподавателя (стр. %d/%d)",
 			"select-course"=> "Выбери курс группы",
 			"select-group"=> "Выбери специальность группы",
 			"no-data"=> "❌ Нет данных",
@@ -40,7 +39,6 @@ class Bot {
 			"profile-journal-filled"=> "\n🆔 Логин, используемый для сбора ваших оценок - %s",
 			"profile-mail-allowed"=> "\n✅ Вы разрешили присылать вам рассылочные сообщения",
 			"profile-mail-not-allowed"=> "\n❌ Вы запретили присылать вам рассылочные сообщения",
-			"type-cabinet"=> "Введи номер кабинета",
 			"updating-menu"=> "Обновляем меню!",
 			"started-editing"=> "Начинаем изменять твой профиль!",
 			"wrong_input"=> "Это не подойдёт",
@@ -55,7 +53,9 @@ class Bot {
 			"write-teacher" => "Напиши фамилию преподавателя",
 			"teacher-not-found" => "Преподаватель не найден",
 			"grades-fail" => "Не удалось собрать оценки с помощью данных логина и пароля. Пожалуйста перепроверь их правильность, и, если нужно, введи заново",
-			"write-teacher-reg" => "%d. Напиши свою фамилию"
+			"write-teacher-reg" => "%d. Напиши свою фамилию",
+			"write-cab" => "Напиши номер кабинета",
+			"cabinet-fail" => "❌ Такого кабинета нет, либо данные о расписании не сгенерированы. Повтори попытку позже"
 		);
 
 		$this->wait_responses = array(
@@ -428,6 +428,29 @@ class Bot {
 
 		TeacherScheduleModel::create($date, $teacher_id, $attachment);
 	}
+	
+	// Показ занятости кабинетов
+	private function answerShowCabinetOccupancy($vid, $date, $cabinet, $msg_id) {
+		// Получить кэшированное расписание
+		$response = OccupancyCacheModel::getCached($date, $cabinet);
+
+		if ($response != false) { // Кэшированное расписание есть
+			$this->editMessageVk($vid, $msg_id, null, null, $response['photo']);
+			return;
+		}
+
+		$this->answerEditWait($vid, $msg_id);
+		$data = PairModel::getCabinetOccupancy($date, $cabinet);
+		if (count($data) == 1) { // Только одна строка в ответе - и та - подписи колонок
+			$this->editMessageVk($vid, $msg_id, $this->responses['cabinet-fail']);
+			return false;
+		}
+		$gen = new OccupancyGenerator(null, $data, "Расписание занятости кабинета ".$cabinet.' на '.$date);
+		$attachment = $gen->run();
+		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
+
+		OccupancyCacheModel::create($date, $cabinet, $attachment);
+	}
 
 	// Показ оценок
 	private function answerShowGrades($vid, $user_id, $login, $password) {
@@ -625,8 +648,14 @@ class Bot {
 		$this->sendMessageVk($vid, $this->responses['teacher-not-found']);
 	}
 
+	// Просьба написать фамилию чтобы зарегистрироваться
 	private function answerAskTeacherSignature($vid, $progress) {
 		$this->sendMessageVk($vid, sprintf($this->responses['write-teacher-reg'], $progress));
+	}
+
+	// Просьба написать номер кабинета
+	private function answerAskCabNumber($vid) {
+		$this->sendMessageVk($vid, $this->responses['write-cab'], $this->keyboards['cancel']);
 	}
 
 	#endregion
@@ -747,11 +776,12 @@ class Bot {
 						}
 						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
 						return false;
-					//~ case 'Кабинеты' and $user['type'] == 2) {
-						//~ $user['state'] = States.enter_cab;
-						//~ $this->answerAskCabNumber($this->vid);
-						//~ database.addStatRecord($user['gid'], $user['type'], 7);
-						//~ return true;
+					case 'Кабинеты':
+						if ($user['type'] != 2) return false; // Не преподавателям нельзя
+						$user['state'] = STATE_ENTER_CAB;
+						$this->answerAskCabNumber($this->vid);
+						StatModel::create($user['gid'], $user['type'], FUNC_VIEW_CABS);
+						return true;
 					case 'Где преподаватель?':
 						$user['state'] = STATE_ENTER_TEACHER;
 						$this->answerAskSelectTeacher($this->vid);
@@ -836,21 +866,19 @@ class Bot {
 				$this->answerAskIfCanSend($this->vid, $user['question_progress']);
 				return true;
 
+			case STATE_ENTER_CAB: // Ввод кабинета
+				if ($this->checkIfCancelled($text, $user)) return true;
+				$this->answerToHub($this->vid, $user['type'], $this->responses['returning']);
+				$this->answerSelectDate($vid, $text, INTENT_VIEW_CABINETS);
+				$user['state'] = STATE_HUB;
+				return true;
+
 			case STATE_VOID: // Заглушка;
 				return false;
 
 			default:
 				return false;
 		}
-
-		//~ if ($user['state'] == States.enter_cab) {;
-			//~ // Ввод кабинета;
-			//~ if ($this->checkIfCancelled($text, $user)) {;
-				//~ return true;
-			//~ $user['state'] = STATE_HUB;
-			//~ $this->answerToHub($this->vid, $user['type'], $this->answers['returning']);
-			//~ $this->answerSelectDate($this->vid, $msg_id + 1, $text, INTENT_VIEW_CABINETS);
-			//~ return true;
 	}
 
 	// Обработка сообщений обратного вызова. Возвращает true, если необходимо обновить профиль пользователя
@@ -901,7 +929,7 @@ class Bot {
 						return false;
 
 					case INTENT_VIEW_CABINETS: // Просмотр занятости кабинетов
-						$this->answerShowCabinetOccupancy(vid, data['date'], data['target']);
+						$this->answerShowCabinetOccupancy($this->vid, $data->date, $data->target, $msg_id);
 						return false;
 				}
 

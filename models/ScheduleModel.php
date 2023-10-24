@@ -30,6 +30,11 @@ class ScheduleModel extends Model {
 			$stm->bind_param("s", $day);
 			$stm->execute();
 
+			// И кэшированные места кабинетов тоже
+			$stm = $db->prepare("DELETE FROM occupancy_cache WHERE day=?");
+			$stm->bind_param("s", $day);
+			$stm->execute();
+
 			return $result["id"];
 		}
 

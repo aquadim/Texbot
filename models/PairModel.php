@@ -119,4 +119,24 @@ class PairModel extends Model {
 		array_unshift($out, array("Время", "Пара", "Место проведения", "Группа"));
 		return $out;
 	}
+
+	// Возвращает занятость кабинетов
+	public static function getCabinetOccupancy($date, $cab) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("
+			SELECT
+				TIME_FORMAT(pairs.ptime, '%H:%i') as pair_time,
+				IFNULL(teachers.surname, 'Свободен') AS occupant
+			FROM pairs
+				LEFT JOIN schedules ON schedules.id = pairs.schedule_id
+				LEFT JOIN pair_places ON pair_places.pair_id = pairs.id 
+				LEFT JOIN teachers ON teachers.id = pair_places.teacher_id 
+			WHERE schedules.day=? AND pair_places.place=? 
+			ORDER BY pairs.ptime");
+		$stm->bind_param("ss", $date, $cab);
+		$stm->execute();
+		$out = $stm->get_result()->fetch_all(MYSQLI_NUM);
+		array_unshift($out, array("Время", "Кто занял"));
+		return $out;
+	}
 }

@@ -7,6 +7,7 @@ require_once __DIR__."/class/TableGenerator.php";
 require_once __DIR__."/class/GroupScheduleGenerator.php";
 require_once __DIR__."/class/TeacherScheduleGenerator.php";
 require_once __DIR__."/class/GradesGenerator.php";
+require_once __DIR__."/class/OccupanсyGenerator.php";
 require_once __DIR__."/class/Database.php";
 
 define('vk_api_endpoint', "https://api.vk.com/method/");
@@ -53,6 +54,7 @@ define('FUNC_GRADES', 2); // Оценки
 define('FUNC_BELLS', 3); // Звонки
 define('FUNC_OTHER_RASP', 4); // Расписание другой группы
 define('FUNC_WHERE_TEACHER', 5); // Где преподаватель
+define('FUNC_VIEW_CABS', 6); // Занятость кабинетов
 
 // Объявление общих переменных
 define('GEN_MONTH_NUM_TO_STR', [9=>"сентября",10=>"октября",11=>"ноября",12=>"декабря",1=>"января",2=>"февраля",3=>"марта",4=>"апреля",5=>"мая",6=>"июня",7=>"июля",8=>"августа"]);
