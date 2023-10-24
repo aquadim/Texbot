@@ -54,7 +54,8 @@ class Bot {
 			"credentials-unknown" => "Чтобы получить твои оценки мне нужно узнать логин и пароль от аккаунта в электронном дневнике.\nМожешь ввести их в меню профиля или с помощью этой кнопки",
 			"write-teacher" => "Напиши фамилию преподавателя",
 			"teacher-not-found" => "Преподаватель не найден",
-			"grades-fail" => "Не удалось собрать оценки с помощью данных логина и пароля. Пожалуйста перепроверь их правильность, и, если нужно, введи заново"
+			"grades-fail" => "Не удалось собрать оценки с помощью данных логина и пароля. Пожалуйста перепроверь их правильность, и, если нужно, введи заново",
+			"write-teacher-reg" => "%d. Напиши свою фамилию"
 		);
 
 		$this->wait_responses = array(
@@ -428,28 +429,6 @@ class Bot {
 		TeacherScheduleModel::create($date, $teacher_id, $attachment);
 	}
 
-	//~ private function answerShowScheduleForTeacher($vid, $msg_id, $date, $teacher_id) {
-		//~ // Показ расписания для преподавателя
-		//~ response = database.getCachedScheduleOfTeacher(date, teacher_id)
-		//~ if response:
-			//~ # Есть кэшированное
-			//~ $this->sendMessageVk($vid, null, null, 'photo-'+str($_ENV['public_id'])+'_'+str(response['photo_id']))
-			//~ return
-		//~ msg_id = $this->sendMessageVk($vid, self.getRandomWaitText())
-
-		//~ self.tasks.append(graphics.TeacherScheduleGenerator(
-			//~ $vid,
-			//~ $_ENV['public_id'],
-			//~ self.themes['rasp'],
-			//~ self,
-			//~ 'teacher-schedule',
-			//~ msg_id,
-			//~ date,
-			//~ teacher_id
-		//~ ))
-		//~ self.tasks[-1].start()
-	//~ }
-
 	// Показ оценок
 	private function answerShowGrades($vid, $user_id, $login, $password) {
 		if ($login == null || $password == null) {
@@ -532,29 +511,17 @@ class Bot {
 				$response['pair_time'],
 				$response['pair_place']
 			));
+		} else {
+			$this->sendMessageVk($vid, sprintf($this->responses['get-next-teacher'],
+				$this->num_word($hours_left, array('час', 'часа', 'часов'), true),
+				$this->num_word($minutes_left, array('минута', 'минуты', 'минут'), true),
+				$response['pair_name'],
+				$response['pair_time'],
+				$response['pair_group'],
+				$response['pair_place']
+			));
 		}
 	}
-
-	//~ private function answerSelectTeacher($vid, message_id, intent) {
-		//~ // Отправляет сообщения с клавиатурами выбора преподавателя
-
-		//~ # Узнаём какие вообще есть преподаватели
-		//~ teachers = database.getAllTeachers()
-		//~ keyboards = self.makeTeacherSelectKeyboards(teachers, intent, message_id)
-		//~ amount = len(keyboards)
-
-		//~ for index, k in enumerate(keyboards) {
-			//~ $this->sendMessageVk($vid, $this->responses['select-teacher'].format(index + 1, amount), k)
-			
-	//~ // Отправляет сообщение с выбором курса
-	//~ private function answerSelectGroupCourse($vid, $msg_id, $intent, $edit) {
-		//~ $keyboard = $this->keyboardSelectCourse($msg_id, $intent);
-		//~ if (($edit) {
-			//~ $this->editMessageVk($vid, $msg_id, $this->responses['select-course'], keyboard);
-		//~ } else {
-			//~ $this->sendMessageVk($vid, $this->responses['select-course'], keyboard);
-		//~ }
-	//~ }
 
 	// Отправляет сообщение с выбором группы
 	private function answerSelectGroupSpec($vid, $msg_id, $course, $intent) {
@@ -585,7 +552,7 @@ class Bot {
 				$message .= sprintf($this->responses['profile-journal-filled'], $user['journal_login']);
 			}
 		} else { // Преподаватель
-			$message .= sprintf($this->responses['profile-identifier-teacher'], TeacherModel::getById($user['teacher_id']['surname']));
+			$message .= sprintf($this->responses['profile-identifier-teacher'], TeacherModel::getById($user['teacher_id'])['surname']);
 		}
 
 		if ($user['allows_mail']) {
@@ -658,6 +625,10 @@ class Bot {
 		$this->sendMessageVk($vid, $this->responses['teacher-not-found']);
 	}
 
+	private function answerAskTeacherSignature($vid, $progress) {
+		$this->sendMessageVk($vid, sprintf($this->responses['write-teacher-reg'], $progress));
+	}
+
 	#endregion
 
 	# region Обработка ошибок
@@ -724,11 +695,15 @@ class Bot {
 					return true;
 				} else if ($text == 'Нет') {
 					// Пользователь - преподаватель;
+
+					// Предложение по улучшению: с помощью vk api получать фамилию пользователя
+					// и на основании этих данных определять id преподавателя. Если кто то это смотрит, то
+					// чур вы это сделаете :)
+
 					$user['type'] = 2;
 					$user['question_progress'] += 1;
-					$user['state'] = STATE_VOID;
-					$msg_id = $this->answerAskTeacherSignature($vid, $user['question_progress']);
-					$this->answerSelectTeacher($vid, $msg_id + 1, intents.registration);
+					$user['state'] = STATE_REG_ENTER_SIGNATURE;
+					$this->answerAskTeacherSignature($vid, $user['question_progress']);
 					return true;
 				} else {
 					// Неверный ввод;
@@ -759,13 +734,11 @@ class Bot {
 						}
 						StatModel::create($user['gid'], $user['type'], FUNC_RASP);
 						return false;
-
 					case 'Оценки':
 						if ($user['type'] != 1) return false; // Не студентам нельзя
 						$this->answerShowGrades($this->vid, $user['id'], $user['journal_login'], $user['journal_password']);
 						StatModel::create($user['gid'], $user['type'], FUNC_GRADES);
 						return true;
-
 					case 'Что дальше?':
 						if ($user['type'] == 1) {
 							$this->answerWhatsNext($this->vid, $user['gid'], false);
@@ -787,6 +760,7 @@ class Bot {
 					case 'Расписание группы':
 						$this->answerAskCourseNumber($this->vid, $this->responses['select-course'], INTENT_STUD_RASP_VIEW);
 						StatModel::create($user['gid'], $user['type'], FUNC_OTHER_RASP);
+						return false;
 					case 'Профиль':
 						$this->answerShowProfile($this->vid, $user, false);
 						return false;
@@ -835,10 +809,7 @@ class Bot {
 				if ($this->checkIfCancelled($text, $user)) return true;
 
 				// Неверный формат фамилии мы преобразовываем.
-				// 1. Начинается с большой буквы
-				$text = mb_strtoupper(mb_substr($text, 0, 1)) . mb_substr($text, 1);
-				// 2. Ё заменяется на Е
-				$text = str_replace('ё', 'е', $text);
+				$text = $this->fixTeacherSurname($text);
 
 				$teacher = TeacherModel::getBySurname($text);
 				if (!$teacher) {
@@ -849,6 +820,20 @@ class Bot {
 
 				$this->answerToHub($this->vid, $user['type'], $this->responses['returning']);
 				$user['state'] = STATE_HUB;
+				return true;
+
+			case STATE_REG_ENTER_SIGNATURE: // Ввод фамилии преподавателя для регистрации
+				$text = $this->fixTeacherSurname($text);
+				$teacher = TeacherModel::getBySurname($text);
+				if (!$teacher) {
+					$this->answerTeacherNotFound($this->vid);
+					return false;
+				} else {
+					$user['teacher_id'] = $teacher['id'];
+				}
+				$user['question_progress'] += 1;
+				$user['state'] = STATE_REG_CAN_SEND;
+				$this->answerAskIfCanSend($this->vid, $user['question_progress']);
 				return true;
 
 			case STATE_VOID: // Заглушка;
@@ -1180,5 +1165,14 @@ class Bot {
 		} else {
 			return false;
 		}
+	}
+
+	// Преобразует возможно неправильную фамилию преподавателя в правильную
+	private function fixTeacherSurname($text) {
+		// 1. Начинается с большой буквы
+		$text = mb_strtoupper(mb_substr($text, 0, 1)) . mb_substr($text, 1);
+		// 2. Ё заменяется на Е
+		$text = str_replace('ё', 'е', $text);
+		return $text;
 	}
 }

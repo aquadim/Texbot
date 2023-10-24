@@ -23,6 +23,7 @@ define('STATE_ENTER_LOGIN_AFTER_PROFILE', 7);	// Ввод логина, пото
 define('STATE_ENTER_PASSWORD_AFTER_PROFILE', 8);// Ввод пароля, потом показываем профиль
 define('STATE_ENTER_CAB', 9);					// Ввод кабинета
 define('STATE_ENTER_TEACHER', 10);				// Ввод преподавателя
+define('STATE_REG_ENTER_SIGNATURE', 11);		// Ввод преподавателя (при регистрации преподавателя)
 
 // Типы payload
 define('PAYLOAD_SELECT_GROUP', 0);		// Выбор группы

@@ -49,6 +49,32 @@ class PairModel extends Model {
 		$stm->execute();
 		return $stm->get_result()->fetch_array(MYSQLI_ASSOC);
 	}
+
+	// Возвращает время до следующей пары у преподавателя
+	public static function getNextTeacherPair($teacher_id) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("
+			SELECT
+				TIME_FORMAT(pairs.ptime, '%H:%i') AS pair_time,
+				pair_names.name AS pair_name, 
+				IFNULL(pair_places.place, '(н/д)') as pair_place,
+                CONCAT(groups.course, ' ', groups.spec) AS pair_group,
+				TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP, TIMESTAMP(schedules.day, pairs.ptime)) AS dt
+			FROM
+				pairs
+				LEFT JOIN pair_places ON pair_places.pair_id = pairs.id
+				LEFT JOIN schedules ON schedules.id = pairs.schedule_id
+				LEFT JOIN teachers ON teachers.id = pair_places.teacher_id
+				LEFT JOIN pair_names ON pair_names.id = pairs.name
+				LEFT JOIN groups ON groups.id = schedules.gid
+			WHERE pair_places.teacher_id = ? AND TIMESTAMP(schedules.day, pairs.ptime) > CURRENT_TIMESTAMP
+			GROUP BY pair_places.pair_id
+			ORDER BY schedules.day ASC, pairs.ptime ASC
+			LIMIT 1");
+		$stm->bind_param("s", $teacher_id);
+		$stm->execute();
+		return $stm->get_result()->fetch_array(MYSQLI_ASSOC);
+	}
 	
 	// Возвращает данные для показа в функции расписания
 	public static function getPairsOfSchedule($schedule_id) {
