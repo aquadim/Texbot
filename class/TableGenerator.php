@@ -84,7 +84,12 @@ class TableGenerator {
 			'hash'=>$response->hash,
 			'v'=>'5.131'
 		];
-		$data = json_decode(file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params)));
+		$response = file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params));
+
+		// Сохранить в целях отладки (ВРЕМЕННО)
+		file_put_contents("/home/sysadmin/savelog.txt", date('Y-m-d H:i').' '.$response, FILE_APPEND);
+
+		$data = json_decode($response);
 		return "photo".$data->response[0]->owner_id.'_'.$data->response[0]->id;
 	}
 

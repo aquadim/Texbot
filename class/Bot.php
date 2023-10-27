@@ -72,15 +72,13 @@ class Bot {
 		$this->keyboards = array(
 			"yn_text"=> '{"one_time":true,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Да"}},{"color":"negative","action":{"type":"text","payload":null,"label":"Нет"}}]]}',
 			"cancel"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"negative","action":{"type":"text","payload":null,"label":"Отмена"}}]]}',
-			"to-hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"На главную"}}]]}',
-			"course_nums"=> '{"one_time":true,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"1"}},{"color":"primary","action":{"type":"text","payload":null,"label":"2"}}],[{"color":"primary","action":{"type":"text","payload":null,"label":"3"}},{"color":"primary","action":{"type":"text","payload":null,"label":"4"}}]]}',
+			"return"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"negative","action":{"type":"text","payload":null,"label":"Вернуться"}}]]}',
 			"tos"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"primary","action":{"type":"callback","payload":"{\"type\":1}","label":"Показать условия использования"}}]]}',
 			"unsubscribe"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"negative","action":{"type":"callback","payload":"{\"type\":9}","label":"Запретить рассылки"}}]]}',
 			"stud_hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Расписание"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Оценки"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Что дальше?"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Где преподаватель?"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Расписание группы"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Звонки"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Профиль"}}]]}',
 			"teacher_hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Расписание"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Кабинеты"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Что дальше?"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Где преподаватель?"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Расписание группы"}},{"color":"secondary","action":{"type":"text","payload":null,"label":"Звонки"}}],[{"color":"secondary","action":{"type":"text","payload":null,"label":"Профиль"}}]]}',
 			"enter_journal_credentials"=> '{"one_time":false,"inline":true,"buttons":[[{"color":"primary","action":{"type":"callback","payload":"{\"type\":3,\"after_profile\":false}","label":"Ввести логин и пароль"}}]]}',
 			"empty"=> '{"one_time":false,"inline":false,"buttons":[]}',
-			"admin-hub"=> '{"one_time":false,"inline":false,"buttons":[[{"color":"primary","action":{"type":"text","payload":null,"label":"Рассылка"}},{"color":"primary","action":{"type":"text","payload":null,"label":"Статистика"}},{"color":"negative","action":{"type":"text","payload":null,"label":"Выход"}}]]}'
 		);
 
 		// Определяем данные запроса
@@ -592,55 +590,10 @@ class Bot {
 			$this->sendMessageVk($vid, $message, $keyboard);
 		}
 	}
-	
-	//~ private function answerAskCabNumber($vid) {
-		//~ // Просит преподавателя написать кабинет
-		//~ $this->sendMessageVk($vid, $this->responses['type-cabinet'], $this->keyboards['cancel'])
-
-	//~ private function answerShowCabinetOccupancy($vid, date, place) {
-		//~ // Показ занятости кабинетов
-		//~ response = database.getCachedPlaceOccupancy(date, place)
-		//~ if (response{
-			//~ # Есть кэшированное
-			//~ $this->sendMessageVk($vid, null, null, 'photo-'+str($_ENV['public_id'])+'_'+str(response['photo_id']))
-			//~ return
-
-		//~ msg_id = $this->sendMessageVk($vid, self.getRandomWaitText())
-		//~ self.tasks.append(graphics.CabinetGenerator(
-			//~ $vid,
-			//~ $_ENV['public_id'],
-			//~ self.themes['rasp'],
-			//~ self,
-			//~ 'teacher-schedule',
-			//~ msg_id,
-			//~ date,
-			//~ place
-		//~ ))
-		//~ self.tasks[-1].start()
-
-	//~ private function answerOnStartedEdit($vid) {
-		//~ // Нужна для очистки клавиатуры при старте смены типа профиля
-		//~ return $this->sendMessageVk($vid, $this->responses['started-editing'], $this->keyboards['empty'])
-
-	//~ private function answerShowAdminPanel($vid) {
-		//~ // Показ панели администрации
-		//~ $this->sendMessageVk($vid, $this->responses['admin-welcome'], $this->keyboards['admin-hub'])
-
-	//~ private function answerAskMailTarget($vid) {
-		//~ // Просит ввести цель рассылки
-		//~ $this->sendMessageVk($vid, $this->responses['enter-mail-target'], $this->keyboards['cancel'])
-
-	//~ private function answerAskMailMessage($vid) {
-		//~ // Просит ввести текст рассылки
-		//~ $this->sendMessageVk($vid, $this->responses['enter-mail-message'], $this->keyboards['cancel'])
-
-	//~ private function answerMailDisabled($vid) {
-		//~ // Уведомляет об отключении рассылки
-		//~ $this->sendMessageVk($vid, $this->responses['mail-disabled'])
 
 	// Просьба написать фамилию преподавателя
 	private function answerAskSelectTeacher($vid) {
-		$this->sendMessageVk($vid, $this->responses['write-teacher'], $this->keyboards['cancel']);
+		$this->sendMessageVk($vid, $this->responses['write-teacher'], $this->keyboards['return']);
 	}
 
 	// "Не найдено преподавателя"
@@ -847,9 +800,6 @@ class Bot {
 				} else {
 					$this->answerSelectDate($this->vid, $teacher['id'], INTENT_TEACHER_RASP_VIEW);
 				}
-
-				$this->answerToHub($this->vid, $user['type'], $this->responses['returning']);
-				$user['state'] = STATE_HUB;
 				return true;
 
 			case STATE_REG_ENTER_SIGNATURE: // Ввод фамилии преподавателя для регистрации
@@ -1135,6 +1085,8 @@ class Bot {
 			});
 		$data = curl_exec($grades);
 
+		print_r($headers);
+
 		if ($headers['content-type'][0] != 'application/x-download') {
 			// Неправильный логин и пароль т.к. этот заголовок неверный
 			return false;
@@ -1186,7 +1138,7 @@ class Bot {
 
 	// Проверяет если пользователь запросил отмену. Если да - то возвращаем его в хаб
 	private function checkIfCancelled($text, &$user) {
-		if ($text == 'Отмена') {
+		if ($text == 'Отмена' || $text == 'Вернуться') {
 			$user['state'] = STATE_HUB;
  			$this->answerToHub($user['vk_id'], $user['type'], $this->responses['returning']);
 			return true;
