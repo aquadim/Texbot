@@ -74,7 +74,12 @@ class TableGenerator {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$response = json_decode(curl_exec($ch));
+		$response = curl_exec($ch);
+
+		// Сохранить в целях отладки (ВРЕМЕННО)
+		file_put_contents("/home/sysadmin/savelog.txt", date('Y-m-d H:i').' '.$response."\n", FILE_APPEND);
+
+		$response = json_decode($response);
 
 		// Сохраняем изображение в личное сообщение
 		$params = [
@@ -84,12 +89,8 @@ class TableGenerator {
 			'hash'=>$response->hash,
 			'v'=>'5.131'
 		];
-		$response = file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params));
 
-		// Сохранить в целях отладки (ВРЕМЕННО)
-		file_put_contents("/home/sysadmin/savelog.txt", date('Y-m-d H:i').' '.$response, FILE_APPEND);
-
-		$data = json_decode($response);
+		$data = json_decode(file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params)));
 		return "photo".$data->response[0]->owner_id.'_'.$data->response[0]->id;
 	}
 
