@@ -1109,7 +1109,7 @@ class Bot {
 		$rows = $doc->getElementsByTagName("Row");
 
 		$output = [['Дисциплина', 'Оценки', 'Средний балл']];
-		for ($y = 4; $y < count($rows) - 2; $y++) {
+		for ($y = 4; $y < count($rows) - 1; $y++) {
 			$output_row = [];
 			$children = $rows[$y]->childNodes;
 			// Children - дочерние узлы тэга Row
