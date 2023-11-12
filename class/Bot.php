@@ -616,7 +616,7 @@ class Bot {
 	# region Обработка ошибок
 	// Функция обработки ошибок
 	public function mailErrorReport($message, $file, $line, $trace) {
-		$report = "<pre>Произошла ошибка в Техботе</pre>\n";
+		$report = "<b>Произошла ошибка в Техботе</b>\n";
 		$report .= "<b>Пользователь у которого появилась ошибка: </b> https://vk.com/id".$this->vid."\n";
 		$report .= "<b>Сообщение ошибки: </b> ".$message."\n";
 		$report .= "<b>Файл: </b> ".$file."\n";
@@ -1068,8 +1068,27 @@ class Bot {
 		curl_setopt($auth, CURLOPT_RETURNTRANSFER, 1);
 		curl_exec($auth);
 
+		// Получаем текущий period_id. period_id определяет на какой семестр собираются оценки
+		$page = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/journal_och?page=1&clear=1');
+		curl_setopt($page, CURLOPT_COOKIEFILE, "");
+		curl_setopt($page, CURLOPT_SHARE, $sh);
+		curl_setopt($page, CURLOPT_ENCODING, 'windows-1251');
+		curl_setopt($page, CURLOPT_RETURNTRANSFER, 1);
+		$page = curl_exec($page);
+
+		$doc = new DOMDocument();
+		$doc->loadHTML($page, LIBXML_NOERROR); // Предупреждения и ошибки при парсинге HTML5 тэгов заставляют Техбота прерывать работу. LIBXML_NOERROR отключает ошибки
+		$possible_ids = $doc->getElementsByTagName("option");
+		if (date("m") > 7) {
+			// Семестр в учебном году первый -- берём по индексу 1 (см. HTML страницы журнала)
+			$period_id = $possible_ids[1]->attributes['value']->value;
+		} else {
+			// Семестр в учебном году последний -- берём по индексу 2
+			$period_id = $possible_ids[2]->attributes['value']->value;
+		}
+
 		// Запрос на экспорт оценок
-		$grades = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/journal_och?page=1&marks=1&export=1');
+		$grades = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/journal_och?page=1&marks=1&period_id='.$period_id.'&export=1');
 		$headers = [];
 		curl_setopt($grades, CURLOPT_COOKIEFILE, "");
 		curl_setopt($grades, CURLOPT_SHARE, $sh);
