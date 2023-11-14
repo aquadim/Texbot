@@ -475,7 +475,7 @@ class Bot {
 			$this->sendMessageVk($vid, $this->responses['grades-fail'], $this->keyboards['enter_journal_credentials']);
 			return;
 		}
-		$gen = new GradesGenerator($vid, $data, 'Твои оценки на '.date('Y-m-d H:i'));
+		$gen = new GradesGenerator(null, $data, 'Твои оценки на '.date('Y-m-d H:i'));
 		$attachment = $gen->run();
 		$this->sendMessageVk($vid, null, null, $attachment);
 
