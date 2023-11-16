@@ -8,6 +8,8 @@ class Bot {
 	private $data; // Данные запроса от ВК
 	private $vid; // ID ВК пользователя по запросу которого выполняется обработка
 
+	private $debugpage; // TODO: удалить - страница для дебага
+
 	public function __construct($input) {
 		$this->responses = array(
 			"hi1"=> "Привет, я - Техбот. Моя задача - облегчить твою жизнь, но, для начала, мне нужно задать несколько вопросов",
@@ -633,6 +635,10 @@ class Bot {
 			$report .= "<b>Трассировка ошибки отсутствует</b>\n";
 		}
 
+		if (isset($this->debugpage)) {
+			$report .= $this->debugpage;
+		}
+
 		if ($_ENV["notifications_type"] == "email") { // email
 			$headers = "MIME-Version: 1.0\n";
 			$headers .= "From: Техбот <{$_ENV['notifier_email']}>\n";
@@ -1076,6 +1082,8 @@ class Bot {
 		curl_setopt($page, CURLOPT_RETURNTRANSFER, 1);
 		$page = curl_exec($page);
 
+		$this->debugpage = $page;
+
 		$doc = new DOMDocument();
 		$doc->loadHTML($page, LIBXML_NOERROR); // Предупреждения и ошибки при парсинге HTML5 тэгов заставляют Техбота прерывать работу. LIBXML_NOERROR отключает ошибки
 		$possible_ids = $doc->getElementsByTagName("option");
@@ -1103,8 +1111,6 @@ class Bot {
 				return $len;
 			});
 		$data = curl_exec($grades);
-
-		print_r($headers);
 
 		if ($headers['content-type'][0] != 'application/x-download') {
 			// Неправильный логин и пароль т.к. этот заголовок неверный
