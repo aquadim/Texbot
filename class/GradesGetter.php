@@ -11,7 +11,6 @@ function getGradesData($login, $password) {
 	curl_setopt($auth, CURLOPT_COOKIEFILE, "");
 	curl_setopt($auth, CURLOPT_SHARE, $sh);
 	curl_setopt($auth, CURLOPT_POST, 1);
-	//~ curl_setopt($auth, CURLOPT_POSTFIELDS, 'username='.username.'&userpass='.sha1(password));
 	curl_setopt($auth, CURLOPT_POSTFIELDS, 'username='.$login.'&userpass='.$password);
 	curl_setopt($auth, CURLOPT_ENCODING, 'windows-1251');
 	curl_setopt($auth, CURLOPT_RETURNTRANSFER, 1);
@@ -23,12 +22,10 @@ function getGradesData($login, $password) {
 	curl_setopt($page, CURLOPT_SHARE, $sh);
 	curl_setopt($page, CURLOPT_ENCODING, 'windows-1251');
 	curl_setopt($page, CURLOPT_RETURNTRANSFER, 1);
-	$html = curl_exec($page);
-
-	libxml_use_internal_errors(true);
+	$page = curl_exec($page);
 
 	$doc = new DOMDocument();
-	$doc->loadHTML($html);
+	$doc->loadHTML($page, LIBXML_NOERROR);
 	$possible_ids = $doc->getElementsByTagName("option");
 	if (date("m") > 7) {
 		// Семестр в учебном году первый -- берём по индексу 1 (см. HTML страницы журнала)
@@ -39,7 +36,7 @@ function getGradesData($login, $password) {
 	}
 
 	// Запрос на экспорт оценок
-	$grades = curl_init('http://223.225.1.16:8081/region_pou/region.cgi/journal_och?page=1&marks=1&period_id='.$period_id.'&export=1');
+	$grades = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/journal_och?page=1&marks=1&period_id='.$period_id.'&export=1');
 	$headers = [];
 	curl_setopt($grades, CURLOPT_COOKIEFILE, "");
 	curl_setopt($grades, CURLOPT_SHARE, $sh);
