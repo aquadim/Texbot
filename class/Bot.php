@@ -143,11 +143,12 @@ class Bot {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
+		$fp = fopen(vk_api_endpoint."messages.send?".http_build_query($params), 'r');
+		fclose($fp);
 	}
 
 	// Изменение сообщения
-	private function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) {
+	private function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -378,7 +379,7 @@ class Bot {
 	}
 
 	// Отправляет сообщение с просьбой подождать
-	private function answerSendWait($vid) : int {
+	private function answerSendWait($vid) : void {
 		$this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
 	}
 
