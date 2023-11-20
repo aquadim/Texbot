@@ -25,6 +25,8 @@ function getGradesData($login, $password) {
 	curl_setopt($page, CURLOPT_RETURNTRANSFER, 1);
 	$html = curl_exec($page);
 
+	libxml_use_internal_errors(true);
+
 	$doc = new DOMDocument();
 	$doc->loadHTML($html);
 	$possible_ids = $doc->getElementsByTagName("option");
