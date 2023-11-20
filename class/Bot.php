@@ -133,7 +133,7 @@ class Bot {
 
 	// Отправка сообщения пользователю ВКонтакте
 	// Возвращает id отправленного сообщения
-	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : int {
+	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -144,13 +144,11 @@ class Bot {
 			"v" => "5.131"
 		);
 		$fp = fopen(vk_api_endpoint."messages.send?".http_build_query($params), 'r');
-		$data = json_decode(stream_get_contents($fp));
 		fclose($fp);
-		return $data->response;
 	}
 
 	// Изменение сообщения
-	private function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) {
+	private function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -381,8 +379,8 @@ class Bot {
 	}
 
 	// Отправляет сообщение с просьбой подождать
-	private function answerSendWait($vid) : int {
-		return $this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
+	private function answerSendWait($vid) : void {
+		$this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
 	}
 
 	// Показ расписания для группы
