@@ -9,6 +9,7 @@ require_once __DIR__."/class/TeacherScheduleGenerator.php";
 require_once __DIR__."/class/GradesGenerator.php";
 require_once __DIR__."/class/OccupancyGenerator.php";
 require_once __DIR__."/class/Database.php";
+require_once __DIR__."/class/GradesGetter.php";
 
 define('vk_api_endpoint', "https://api.vk.com/method/");
 
