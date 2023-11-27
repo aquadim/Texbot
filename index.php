@@ -11,7 +11,7 @@ require_once __DIR__."/class/OccupancyGenerator.php";
 require_once __DIR__."/class/Database.php";
 require_once __DIR__."/class/GradesGetter.php";
 
-define('vk_api_endpoint', "https://87.240.137.208/method/");
+define('vk_api_endpoint', "https://api.vk.com/method/");
 
 // Состояния
 define('STATE_REG_1', 0);		 				// Ответ студент или нет

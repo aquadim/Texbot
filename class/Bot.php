@@ -647,7 +647,7 @@ class Bot {
 		} else if ($_ENV["notifications_type"] == "telegram") {
 			// telegram
 			$params = ['chat_id'=>$_ENV['notifier_bot_chat'], 'text'=>$report, 'parse_mode'=>'html'];
-			$fp = fopen("https://149.154.167.220/bot".$_ENV['notifier_bot_token']."/sendMessage?".http_build_query($params), 'r');
+			$fp = fopen("https://api.telegram.org/bot".$_ENV['notifier_bot_token']."/sendMessage?".http_build_query($params), 'r');
 			fclose($fp);
 		}
 
