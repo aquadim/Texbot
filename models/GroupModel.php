@@ -34,4 +34,13 @@ class GroupModel extends Model {
 		$stm->execute();
 		return $stm->get_result()->fetch_array()['name'];
 	}
+
+	// Возвращает period_id для группы
+	public static function getPeriodIdByGroupId(int $gid) : int {
+		$db = Database::getConnection();
+		$stm = $db->prepare("SELECT period_ids.value FROM groups LEFT JOIN period_ids ON period_ids.id=groups.period_id WHERE groups.id=?");
+		$stm->bind_param("i", $gid);
+		$stm->execute();
+		return $stm->get_result()->fetch_array()[0];
+	}
 }

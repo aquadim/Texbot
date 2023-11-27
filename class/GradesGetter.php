@@ -1,7 +1,7 @@
 <?php
 // Этот файл не содержит класс, только функцию загрузки и парсинга оценок
 // Возвращает таблицу оценок, совместимую с TableGenerator
-function getGradesData($login, $password) {
+function getGradesData($login, $password, $period_id) {
 	// Создаём разделяемый обработчик
 	$sh = curl_share_init();
 	curl_share_setopt($sh, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE); // Делимся куками
@@ -15,25 +15,6 @@ function getGradesData($login, $password) {
 	curl_setopt($auth, CURLOPT_ENCODING, 'windows-1251');
 	curl_setopt($auth, CURLOPT_RETURNTRANSFER, 1);
 	curl_exec($auth);
-
-	// Получаем текущий period_id. period_id определяет на какой семестр собираются оценки
-	$page = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/journal_och?page=1&clear=1');
-	curl_setopt($page, CURLOPT_COOKIEFILE, "");
-	curl_setopt($page, CURLOPT_SHARE, $sh);
-	curl_setopt($page, CURLOPT_ENCODING, 'windows-1251');
-	curl_setopt($page, CURLOPT_RETURNTRANSFER, 1);
-	$page = curl_exec($page);
-
-	$doc = new DOMDocument();
-	$doc->loadHTML($page, LIBXML_NOERROR);
-	$possible_ids = $doc->getElementsByTagName("option");
-	if (date("m") > 7) {
-		// Семестр в учебном году первый -- берём по индексу 1 (см. HTML страницы журнала)
-		$period_id = $possible_ids[1]->attributes['value']->value;
-	} else {
-		// Семестр в учебном году последний -- берём по индексу 2
-		$period_id = $possible_ids[2]->attributes['value']->value;
-	}
 
 	// Запрос на экспорт оценок
 	$grades = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/journal_och?page=1&marks=1&period_id='.$period_id.'&export=1');
