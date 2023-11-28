@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost:3306
--- Время создания: Окт 31 2023 г., 17:05
+-- Время создания: Ноя 28 2023 г., 22:24
 -- Версия сервера: 10.6.12-MariaDB-0ubuntu0.22.04.1
 -- Версия PHP: 8.1.2-1ubuntu2.14
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- База данных: `texbot_prod`
+-- База данных: `texbot`
 --
 
 -- --------------------------------------------------------
@@ -27,6 +27,7 @@ SET time_zone = "+00:00";
 -- Структура таблицы `function_names`
 --
 
+DROP TABLE IF EXISTS `function_names`;
 CREATE TABLE `function_names` (
   `id` int(11) NOT NULL,
   `name` text DEFAULT NULL
@@ -38,6 +39,7 @@ CREATE TABLE `function_names` (
 -- Структура таблицы `grades`
 --
 
+DROP TABLE IF EXISTS `grades`;
 CREATE TABLE `grades` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL COMMENT 'ID пользователя, запросившего оценки',
@@ -51,10 +53,13 @@ CREATE TABLE `grades` (
 -- Структура таблицы `groups`
 --
 
+DROP TABLE IF EXISTS `groups`;
 CREATE TABLE `groups` (
   `id` int(11) NOT NULL,
   `course` tinyint(11) NOT NULL COMMENT 'Курс группы',
-  `spec` varchar(8) NOT NULL COMMENT 'Шифр специальности группы'
+  `spec` varchar(8) NOT NULL COMMENT 'Шифр специальности группы',
+  `enrolled_at` int(11) NOT NULL COMMENT 'Год поступления',
+  `period_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Группы техникума';
 
 -- --------------------------------------------------------
@@ -63,6 +68,7 @@ CREATE TABLE `groups` (
 -- Структура таблицы `mails`
 --
 
+DROP TABLE IF EXISTS `mails`;
 CREATE TABLE `mails` (
   `id` int(11) NOT NULL,
   `target` text DEFAULT NULL,
@@ -77,11 +83,12 @@ CREATE TABLE `mails` (
 -- Структура таблицы `occupancy_cache`
 --
 
+DROP TABLE IF EXISTS `occupancy_cache`;
 CREATE TABLE `occupancy_cache` (
   `id` int(11) NOT NULL,
   `day` date NOT NULL COMMENT 'День занятости',
   `place` text NOT NULL COMMENT 'Собственно кабинет',
-  `photo` int(11) NOT NULL COMMENT 'Строка photo для вложения в сообщение'
+  `photo` varchar(50) NOT NULL COMMENT 'Строка photo для вложения в сообщение'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -90,6 +97,7 @@ CREATE TABLE `occupancy_cache` (
 -- Структура таблицы `pairs`
 --
 
+DROP TABLE IF EXISTS `pairs`;
 CREATE TABLE `pairs` (
   `id` int(11) NOT NULL,
   `schedule_id` int(11) NOT NULL COMMENT 'К какому расписанию относится эта пара',
@@ -103,6 +111,7 @@ CREATE TABLE `pairs` (
 -- Структура таблицы `pair_names`
 --
 
+DROP TABLE IF EXISTS `pair_names`;
 CREATE TABLE `pair_names` (
   `id` int(11) NOT NULL,
   `name` text NOT NULL COMMENT 'Название пары'
@@ -114,6 +123,7 @@ CREATE TABLE `pair_names` (
 -- Структура таблицы `pair_places`
 --
 
+DROP TABLE IF EXISTS `pair_places`;
 CREATE TABLE `pair_places` (
   `id` int(11) NOT NULL,
   `pair_id` int(11) NOT NULL COMMENT 'ID пары',
@@ -124,9 +134,24 @@ CREATE TABLE `pair_places` (
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `period_ids`
+--
+
+DROP TABLE IF EXISTS `period_ids`;
+CREATE TABLE `period_ids` (
+  `id` int(11) NOT NULL,
+  `num` smallint(6) NOT NULL COMMENT 'Номер семестра',
+  `value` mediumint(9) NOT NULL COMMENT 'Значение period_id',
+  `group_id` int(11) NOT NULL COMMENT 'Группа записи'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Значения period_id для электронного дневника';
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `schedules`
 --
 
+DROP TABLE IF EXISTS `schedules`;
 CREATE TABLE `schedules` (
   `id` int(11) NOT NULL,
   `gid` int(11) NOT NULL COMMENT 'ID группы расписания',
@@ -140,6 +165,7 @@ CREATE TABLE `schedules` (
 -- Структура таблицы `stats`
 --
 
+DROP TABLE IF EXISTS `stats`;
 CREATE TABLE `stats` (
   `id` int(11) NOT NULL,
   `caller_gid` int(11) DEFAULT NULL COMMENT 'Какая группа вызвала эту функцию',
@@ -154,6 +180,7 @@ CREATE TABLE `stats` (
 -- Структура таблицы `teachers`
 --
 
+DROP TABLE IF EXISTS `teachers`;
 CREATE TABLE `teachers` (
   `id` int(11) NOT NULL,
   `surname` text NOT NULL COMMENT 'Фамилия преподавателя'
@@ -165,6 +192,7 @@ CREATE TABLE `teachers` (
 -- Структура таблицы `teacher_schedule_cache`
 --
 
+DROP TABLE IF EXISTS `teacher_schedule_cache`;
 CREATE TABLE `teacher_schedule_cache` (
   `id` int(11) NOT NULL,
   `day` date NOT NULL COMMENT 'День расписания преподавателя',
@@ -178,6 +206,7 @@ CREATE TABLE `teacher_schedule_cache` (
 -- Структура таблицы `users`
 --
 
+DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `vk_id` int(11) NOT NULL COMMENT 'ID пользователя во ВКонтакте',
@@ -188,6 +217,7 @@ CREATE TABLE `users` (
   `gid` int(11) DEFAULT NULL COMMENT 'ID группы пользователя',
   `journal_login` text DEFAULT NULL COMMENT 'Логин от электронного дневника АВЕРС',
   `journal_password` text DEFAULT NULL COMMENT 'Пароль от электронного дневника',
+  `checked_grades_this_iteration` tinyint(4) NOT NULL DEFAULT 0 COMMENT 'Проверены ли оценки на этой итерации?',
   `teacher_id` smallint(11) DEFAULT NULL COMMENT 'ID преподавателя для этого аккаунта'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Пользователи Техбота';
 
@@ -212,7 +242,8 @@ ALTER TABLE `grades`
 -- Индексы таблицы `groups`
 --
 ALTER TABLE `groups`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `period_id` (`period_id`);
 
 --
 -- Индексы таблицы `mails`
@@ -246,6 +277,13 @@ ALTER TABLE `pair_names`
 ALTER TABLE `pair_places`
   ADD PRIMARY KEY (`id`),
   ADD KEY `pair_id` (`pair_id`);
+
+--
+-- Индексы таблицы `period_ids`
+--
+ALTER TABLE `period_ids`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `group_id` (`group_id`);
 
 --
 -- Индексы таблицы `schedules`
@@ -321,6 +359,12 @@ ALTER TABLE `pair_places`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `period_ids`
+--
+ALTER TABLE `period_ids`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `schedules`
 --
 ALTER TABLE `schedules`
@@ -361,6 +405,12 @@ ALTER TABLE `grades`
   ADD CONSTRAINT `grades_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `groups`
+--
+ALTER TABLE `groups`
+  ADD CONSTRAINT `groups_ibfk_1` FOREIGN KEY (`period_id`) REFERENCES `period_ids` (`id`);
+
+--
 -- Ограничения внешнего ключа таблицы `pairs`
 --
 ALTER TABLE `pairs`
@@ -374,6 +424,12 @@ ALTER TABLE `pair_places`
   ADD CONSTRAINT `pair_places_ibfk_1` FOREIGN KEY (`pair_id`) REFERENCES `pairs` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `period_ids`
+--
+ALTER TABLE `period_ids`
+  ADD CONSTRAINT `period_ids_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`);
+
+--
 -- Ограничения внешнего ключа таблицы `schedules`
 --
 ALTER TABLE `schedules`
@@ -384,6 +440,12 @@ ALTER TABLE `schedules`
 --
 ALTER TABLE `teacher_schedule_cache`
   ADD CONSTRAINT `teacher_schedule_cache_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`gid`) REFERENCES `groups` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
