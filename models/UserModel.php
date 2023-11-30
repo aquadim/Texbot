@@ -42,4 +42,18 @@ class UserModel extends Model {
 		);
 		$stm->execute();
 	}
+
+	// Получает все количества двоек по предметам
+	public static function getNegativeGradesCount(int $user_id) {
+		$db = Database::getConnection();
+		$stm = $db->prepare("SELECT discipline, count FROM negative_grades WHERE user_id=?");
+		$stm->bind_param("i", $user_id);
+		$stm->execute();
+		$result = $stm->get_result();
+		$output = [];
+		while ($row = $result->fetch_array())
+			$output[$row['discipline']] = $row['count'];
+		}
+		return $output;
+	}
 }

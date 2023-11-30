@@ -97,8 +97,6 @@ while ($group = $groups->fetch_array()) {
 	$stm_get_period_id_id->execute();
 	$period_id_id = $stm_get_period_id_id->get_result()->fetch_array()[0];
 
-	echo $group['id']." - ".$period_id_id."\n";
-
 	$stm_set_period_id->bind_param("ii", $period_id_id, $group['id']);
 	$stm_set_period_id->execute();
 }

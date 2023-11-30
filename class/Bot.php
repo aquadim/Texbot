@@ -133,7 +133,7 @@ class Bot {
 
 	// Отправка сообщения пользователю ВКонтакте
 	// Возвращает id отправленного сообщения
-	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
+	private static function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
