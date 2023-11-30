@@ -133,7 +133,7 @@ class Bot {
 
 	// Отправка сообщения пользователю ВКонтакте
 	// Возвращает id отправленного сообщения
-	private function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
+	private static function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -451,7 +451,7 @@ class Bot {
 	}
 
 	// Показ оценок
-	private function answerShowGrades($vid, $user_id, $login, $password) {
+	private function answerShowGrades($vid, $user_id, $user_gid, $login, $password) {
 		if ($login == null || $password == null) {
 			$this->sendMessageVk($vid, $this->responses['credentials-unknown'], $this->keyboards['enter_journal_credentials']);
 			return;
@@ -469,9 +469,10 @@ class Bot {
 			$this->answerSendWait($vid);
 		}
 
-		// TODO: изменять присланное сообщение, а не присылать новое
-		$data = getGradesData($login, $password);
+		$period_id = GroupModel::getPeriodIdByGroupId($user_gid);
+		$data = getGradesData($login, $password, $period_id);
 		if ($data === false) {
+			// TODO: изменять присланное сообщение, а не присылать новое
 			$this->sendMessageVk($vid, $this->responses['grades-fail'], $this->keyboards['enter_journal_credentials']);
 			return;
 		}
@@ -722,7 +723,7 @@ class Bot {
 						return false;
 					case 'Оценки':
 						if ($user['type'] != 1) return false; // Не студентам нельзя
-						$this->answerShowGrades($this->vid, $user['id'], $user['journal_login'], $user['journal_password']);
+						$this->answerShowGrades($this->vid, $user['id'], $user['gid'], $user['journal_login'], $user['journal_password']);
 						StatModel::create($user['gid'], $user['type'], FUNC_GRADES);
 						return true;
 					case 'Что дальше?':
