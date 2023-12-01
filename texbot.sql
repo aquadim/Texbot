@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost:3306
--- Время создания: Ноя 28 2023 г., 22:24
+-- Время создания: Дек 01 2023 г., 19:16
 -- Версия сервера: 10.6.12-MariaDB-0ubuntu0.22.04.1
 -- Версия PHP: 8.1.2-1ubuntu2.14
 
@@ -27,7 +27,6 @@ SET time_zone = "+00:00";
 -- Структура таблицы `function_names`
 --
 
-DROP TABLE IF EXISTS `function_names`;
 CREATE TABLE `function_names` (
   `id` int(11) NOT NULL,
   `name` text DEFAULT NULL
@@ -39,7 +38,6 @@ CREATE TABLE `function_names` (
 -- Структура таблицы `grades`
 --
 
-DROP TABLE IF EXISTS `grades`;
 CREATE TABLE `grades` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL COMMENT 'ID пользователя, запросившего оценки',
@@ -53,7 +51,6 @@ CREATE TABLE `grades` (
 -- Структура таблицы `groups`
 --
 
-DROP TABLE IF EXISTS `groups`;
 CREATE TABLE `groups` (
   `id` int(11) NOT NULL,
   `course` tinyint(11) NOT NULL COMMENT 'Курс группы',
@@ -68,7 +65,6 @@ CREATE TABLE `groups` (
 -- Структура таблицы `mails`
 --
 
-DROP TABLE IF EXISTS `mails`;
 CREATE TABLE `mails` (
   `id` int(11) NOT NULL,
   `target` text DEFAULT NULL,
@@ -80,10 +76,22 @@ CREATE TABLE `mails` (
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `negative_grades`
+--
+
+CREATE TABLE `negative_grades` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `discipline` text NOT NULL COMMENT 'Дисциплина',
+  `count` int(11) NOT NULL DEFAULT 0 COMMENT 'Количество двоек по дисциплине'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Количество двоек для каждого пользователя';
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `occupancy_cache`
 --
 
-DROP TABLE IF EXISTS `occupancy_cache`;
 CREATE TABLE `occupancy_cache` (
   `id` int(11) NOT NULL,
   `day` date NOT NULL COMMENT 'День занятости',
@@ -97,7 +105,6 @@ CREATE TABLE `occupancy_cache` (
 -- Структура таблицы `pairs`
 --
 
-DROP TABLE IF EXISTS `pairs`;
 CREATE TABLE `pairs` (
   `id` int(11) NOT NULL,
   `schedule_id` int(11) NOT NULL COMMENT 'К какому расписанию относится эта пара',
@@ -111,7 +118,6 @@ CREATE TABLE `pairs` (
 -- Структура таблицы `pair_names`
 --
 
-DROP TABLE IF EXISTS `pair_names`;
 CREATE TABLE `pair_names` (
   `id` int(11) NOT NULL,
   `name` text NOT NULL COMMENT 'Название пары'
@@ -123,7 +129,6 @@ CREATE TABLE `pair_names` (
 -- Структура таблицы `pair_places`
 --
 
-DROP TABLE IF EXISTS `pair_places`;
 CREATE TABLE `pair_places` (
   `id` int(11) NOT NULL,
   `pair_id` int(11) NOT NULL COMMENT 'ID пары',
@@ -137,7 +142,6 @@ CREATE TABLE `pair_places` (
 -- Структура таблицы `period_ids`
 --
 
-DROP TABLE IF EXISTS `period_ids`;
 CREATE TABLE `period_ids` (
   `id` int(11) NOT NULL,
   `num` smallint(6) NOT NULL COMMENT 'Номер семестра',
@@ -151,7 +155,6 @@ CREATE TABLE `period_ids` (
 -- Структура таблицы `schedules`
 --
 
-DROP TABLE IF EXISTS `schedules`;
 CREATE TABLE `schedules` (
   `id` int(11) NOT NULL,
   `gid` int(11) NOT NULL COMMENT 'ID группы расписания',
@@ -165,7 +168,6 @@ CREATE TABLE `schedules` (
 -- Структура таблицы `stats`
 --
 
-DROP TABLE IF EXISTS `stats`;
 CREATE TABLE `stats` (
   `id` int(11) NOT NULL,
   `caller_gid` int(11) DEFAULT NULL COMMENT 'Какая группа вызвала эту функцию',
@@ -180,7 +182,6 @@ CREATE TABLE `stats` (
 -- Структура таблицы `teachers`
 --
 
-DROP TABLE IF EXISTS `teachers`;
 CREATE TABLE `teachers` (
   `id` int(11) NOT NULL,
   `surname` text NOT NULL COMMENT 'Фамилия преподавателя'
@@ -192,7 +193,6 @@ CREATE TABLE `teachers` (
 -- Структура таблицы `teacher_schedule_cache`
 --
 
-DROP TABLE IF EXISTS `teacher_schedule_cache`;
 CREATE TABLE `teacher_schedule_cache` (
   `id` int(11) NOT NULL,
   `day` date NOT NULL COMMENT 'День расписания преподавателя',
@@ -206,7 +206,6 @@ CREATE TABLE `teacher_schedule_cache` (
 -- Структура таблицы `users`
 --
 
-DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `vk_id` int(11) NOT NULL COMMENT 'ID пользователя во ВКонтакте',
@@ -250,6 +249,13 @@ ALTER TABLE `groups`
 --
 ALTER TABLE `mails`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Индексы таблицы `negative_grades`
+--
+ALTER TABLE `negative_grades`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Индексы таблицы `occupancy_cache`
@@ -335,6 +341,12 @@ ALTER TABLE `groups`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `negative_grades`
+--
+ALTER TABLE `negative_grades`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `occupancy_cache`
 --
 ALTER TABLE `occupancy_cache`
@@ -409,6 +421,12 @@ ALTER TABLE `grades`
 --
 ALTER TABLE `groups`
   ADD CONSTRAINT `groups_ibfk_1` FOREIGN KEY (`period_id`) REFERENCES `period_ids` (`id`);
+
+--
+-- Ограничения внешнего ключа таблицы `negative_grades`
+--
+ALTER TABLE `negative_grades`
+  ADD CONSTRAINT `negative_grades_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
 -- Ограничения внешнего ключа таблицы `pairs`

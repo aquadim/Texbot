@@ -51,9 +51,32 @@ class UserModel extends Model {
 		$stm->execute();
 		$result = $stm->get_result();
 		$output = [];
-		while ($row = $result->fetch_array())
+		while ($row = $result->fetch_array()) {
 			$output[$row['discipline']] = $row['count'];
 		}
 		return $output;
+	}
+
+	// Сохраняет количества двоек
+	public static function saveNegativeGradesCount(int $user_id, $data) : void {
+		$db = Database::getConnection();
+
+		$stm_clean = $db->prepare("DELETE FROM negative_grades WHERE user_id=?");
+		$stm_add = $db->prepare("INSERT INTO negative_grades (user_id, discipline, count) VALUES(?,?,?)");
+		$stm_set_checked = $db->prepare("UPDATE users SET checked_grades_this_iteration=1 WHERE id=?");
+
+		// Удаляются предыдущие записи
+		$stm_clean->bind_param("i", $user_id);
+		$stm_clean->execute();
+
+		// Заносятся новые
+		foreach ($data as $discipline=>$neg_count) {
+			$stm_add->bind_param("isi", $user_id, $discipline, $neg_count);
+			$stm_add->execute();
+		}
+
+		// И для пользователя устанавливается checked_grades_this_iteration
+		$stm_set_checked->bind_param("i", $user_id);
+		$stm_set_checked->execute();
 	}
 }

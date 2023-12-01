@@ -6,6 +6,7 @@ require_once __DIR__."/class/Database.php";
 require_once __DIR__."/class/GradesGetter.php";
 require_once __DIR__."/models/Model.php";
 require_once __DIR__."/models/UserModel.php";
+require_once __DIR__."/class/Bot.php";
 
 // Определение эмодзи
 $emojis = [
@@ -40,54 +41,74 @@ if ($response->num_rows == 0) {
 	$response = selectPeople($db);
 }
 
-while ($row = $response->fetch_array()) {
+while ($user = $response->fetch_array()) {
 	$need_send_message = false;		// Нужно ли отправлять сообщение
 	$message = "Сводка двоек:\n\n";	// Итоговое сообщение
 	$total_negatives = 0;			// Общее количество двоек
 
-	//$grades = getGradesData($row['journal_login'], $row['journal_password'], $row['period_id']);
-	$now_grades = [['Физическая культура', '5 4 4 5 4 2 2', ''], ['Математика', '5 4 4 5 4 2 2', ''], ];
-	//$past_grades = UserModel::getNegativeGradesCount($row['user_id']);
-	$past_grades = ['Физическая культура'=> 13];
+	// Прошлые оценки
+	$past_grades = UserModel::getNegativeGradesCount($user['user_id']);
 
-	foreach ($now_grades as $item) {
-		// Название дисциплины
-		$discipline = $item[0];
+	// Массив текущих оценок (не ассоциативный)
+	$now_grades_numeric = getGradesData($user['journal_login'], $user['journal_password'], $user['period_id']);
 
-		// Число двоек для предмета
-		$now_count = count_chars($item[1], 0)[50]; // 50 - число 2 в ascii
-		$total_negatives += $now_count;
+	// Ассоциативный массив текущих оценок (ключ - название дисциплины, значение - количество двоек)
+	$now_grades_assoc = [];
+	foreach ($now_grades_numeric as $item) {
+		$now_grades_assoc[$item[0]] = count_chars($item[1], 0)[50]; // 50 - число 2 в ascii
+	}
+	UserModel::saveNegativeGradesCount($user['user_id'], $now_grades_assoc);
 
-		if (array_key_exists($discipline, $past_grades)) {
-			// Двойки по этой дисциплине уже существовали
-			$past_count = $past_grades[$discipline];
-			if ($now_count > $past_grades[$discipline]) {
-				// Количество двоек сейчас увеличилось
+	echo "===Текущие оценки===\n";
+	print_r($now_grades_assoc);
+	echo "===Прошлые оценки===\n";
+	print_r($past_grades);
+
+	// Если оценки пользователя ещё не проверялись, не проверяем дальше
+	if (count($past_grades) == 0) {
+		return;
+	}
+
+	foreach ($now_grades_assoc as $discipline => $bad_count) {
+		$total_negatives += $bad_count;
+
+		if (array_key_exists($discipline, $past_grades) == false) {
+			// В прошлом такого предмета не существовало
+			if ($bad_count > 0) {
+				// Количество двоек увеличилось, причём с нуля, так как предмета ещё не было
+				$past_count = 0;
 				$direction = 1;
-			} else  if ($now_count < $past_grades[$discipline]) {
-				// Количество двоек сейчас уменьшилось
-				$direction = -1;
+			} else {
+				// Нет двоек и не было, пропускаем итерацию
+				continue;
 			}
 		} else {
-			// Двойки по этой дисциплине ещё не существовали (т.к. дисциплины без двоек не сохраняются в БД)
-			$past_count = 0;
-			if ($now_count == 0) {
-				// Двоек не было раньше, и сейчас тоже нет
-				continue;
-			} else {
-				// Двоек не было и сейчас появились, направление может быть только 1
+			// Предмет уже существовал
+			$past_grades[$discipline];
+			if ($bad_count > $past_grades[$discipline]) {
+				// Количество двоек увеличилось
 				$direction = 1;
+	
+			} else if ($bad_count < $past_grades[$discipline]) {
+				// Количество двоек уменьшилось
+				$direction = -1;
+	
+			} else {
+				// Количество двоек не изменилось
+				continue;
 			}
 		}
 
+		// Если continue не вызвался, то значит количество двоек изменилось, поэтому необходимо
+		// оповестить об этом
 		$need_send_message = true;
 
 		// Определяем эмодзи для дисциплины
-		if (0 <= $now_count && $now_count <= 3) {
+		if (0 <= $bad_count && $bad_count <= 3) {
 			$emoji = $emojis[$direction][0];
-		} else if (3 < $now_count && $now_count <= 7) {
+		} else if (3 < $bad_count && $bad_count <= 7) {
 			$emoji = $emojis[$direction][1];
-		} else if (7 < $now_count && $now_count <= 10) {
+		} else if (7 < $bad_count && $bad_count <= 10) {
 			$emoji = $emojis[$direction][2];
 		} else {
 			$emoji = $emojis[$direction][3];
@@ -101,13 +122,15 @@ while ($row = $response->fetch_array()) {
 			$message .= ' уменьшилось с ';
 		}
 
-		$message .= $past_count.' до '.$now_count."\n";
+		$message .= $past_grades[$discipline].' до '.$bad_count."\n";
 	}
 
 	$message .= "\nОбщее количество двоек: ".$total_negatives;
 
 	if ($need_send_message) {
-		echo $message;
+		Bot::sendMessageVk($user['vk_id'], $message);
+
+		// Количество двоек изменилось и поэтому мы сохраняем новые данные в БД
+		UserModel::saveNegativeGradesCount($user['user_id'], $now_grades_assoc);
 	}
-	
 }

@@ -31,7 +31,7 @@ function getGradesData($login, $password, $period_id) {
 			$headers[strtolower(trim($header[0]))][] = trim($header[1]);
 			return $len;
 		});
-	$data = curl_exec($grades);
+	$data = iconv('UTF-8', 'UTF-8//IGNORE', curl_exec($grades));
 
 	// Разрыв сессии с журналом
 	$logout = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/logout');

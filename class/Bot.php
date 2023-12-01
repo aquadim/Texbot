@@ -1,5 +1,7 @@
 <?php
 // Бот
+define('vk_api_endpoint', "https://api.vk.com/method/");
+
 class Bot {
 
 	private $responses; // Все сообщения бота
@@ -133,7 +135,7 @@ class Bot {
 
 	// Отправка сообщения пользователю ВКонтакте
 	// Возвращает id отправленного сообщения
-	private static function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
+	public static function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -148,7 +150,7 @@ class Bot {
 	}
 
 	// Изменение сообщения
-	private function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) : void {
+	public function editMessageVk($vid, int $msg_id, string $msg = null, string $keyboard = null, string $attachment = null) : void {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
