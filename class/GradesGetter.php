@@ -7,6 +7,7 @@ function getGradesData($login, $password, $period_id) {
 	curl_share_setopt($sh, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE); // Делимся куками
 
 	// Подаём запрос в электронный дневник на авторизацию
+	// TODO: если авторизация провалена, возвращать false
 	$auth = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/login');
 	curl_setopt($auth, CURLOPT_COOKIEFILE, "");
 	curl_setopt($auth, CURLOPT_SHARE, $sh);
@@ -18,20 +19,10 @@ function getGradesData($login, $password, $period_id) {
 
 	// Запрос на экспорт оценок
 	$grades = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/journal_och?page=1&marks=1&period_id='.$period_id.'&export=1');
-	$headers = [];
 	curl_setopt($grades, CURLOPT_COOKIEFILE, "");
 	curl_setopt($grades, CURLOPT_SHARE, $sh);
 	curl_setopt($grades, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($grades, CURLOPT_HEADERFUNCTION,
-		function($curl, $header) use (&$headers) { // Собираем ответные заголовки https://stackoverflow.com/a/41135574/15146417
-			$len = strlen($header);
-			$header = explode(':', $header, 2);
-			if (count($header) < 2) // ignore invalid headers
-				return $len;
-			$headers[strtolower(trim($header[0]))][] = trim($header[1]);
-			return $len;
-		});
-	$data = iconv('UTF-8', 'UTF-8//IGNORE', curl_exec($grades));
+	$grades_xml = curl_exec($grades);
 
 	// Разрыв сессии с журналом
 	$logout = curl_init('http://223.255.1.16:8081/region_pou/region.cgi/logout');
@@ -40,13 +31,18 @@ function getGradesData($login, $password, $period_id) {
 	curl_setopt($logout, CURLOPT_RETURNTRANSFER, 1);
 	curl_exec($logout);
 
+	// Закрываем сессии curl
+	curl_share_close($sh);
+	curl_close($auth);
+	curl_close($grades);
+
 	// Парсинг экспортного XML
 	// Данные хранятся в строках с тэгом Row
 	// Первые 3 не содержат оценок, их пропускаем
 	// Последний ряд тоже не содержит оценок, его не обрабатываем
 	// Если XML загрузить не удаётся, то **скорее всего** логин и пароль неверны
-	$doc = new DOMDocument();
-	$doc->loadXML($data);
+	$doc = new DOMDocument("1.0", "utf-8");
+	$doc->loadXML($grades_xml);
 	$rows = $doc->getElementsByTagName("Row");
 
 	$output = [];
@@ -68,12 +64,6 @@ function getGradesData($login, $password, $period_id) {
 			trim($children[5]->nodeValue)
 		];
 	}
-
-	// Закрываем сессии curl
-	curl_share_close($sh);
-	curl_close($auth);
-	curl_close($grades);
-
 
 	return $output;
 }
