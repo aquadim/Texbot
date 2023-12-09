@@ -76,9 +76,6 @@ class TableGenerator {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$response = curl_exec($ch);
 
-		// Сохранить в целях отладки (ВРЕМЕННО)
-		file_put_contents("/home/sysadmin/savelog.txt", date('Y-m-d H:i').' '.$response."\n", FILE_APPEND);
-
 		$response = json_decode($response);
 
 		// Сохраняем изображение в личное сообщение
