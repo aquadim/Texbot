@@ -44,10 +44,10 @@ class UserModel extends Model {
 	}
 
 	// Получает все количества двоек по предметам
-	public static function getNegativeGradesCount(int $user_id) {
+	public static function getNegativeGradesCount(int $user_id, int $period_id) {
 		$db = Database::getConnection();
-		$stm = $db->prepare("SELECT discipline, count FROM negative_grades WHERE user_id=?");
-		$stm->bind_param("i", $user_id);
+		$stm = $db->prepare("SELECT discipline, count FROM negative_grades WHERE user_id=? AND period_id=?");
+		$stm->bind_param("ii", $user_id, $period_id);
 		$stm->execute();
 		$result = $stm->get_result();
 		$output = [];
@@ -58,20 +58,20 @@ class UserModel extends Model {
 	}
 
 	// Сохраняет количества двоек
-	public static function saveNegativeGradesCount(int $user_id, $data) : void {
+	public static function saveNegativeGradesCount(int $user_id, $data, int $period_id) : void {
 		$db = Database::getConnection();
 
-		$stm_clean = $db->prepare("DELETE FROM negative_grades WHERE user_id=?");
-		$stm_add = $db->prepare("INSERT INTO negative_grades (user_id, discipline, count) VALUES(?,?,?)");
+		$stm_clean = $db->prepare("DELETE FROM negative_grades WHERE user_id=? AND period_id=?");
+		$stm_add = $db->prepare("INSERT INTO negative_grades (user_id, discipline, count, period_id) VALUES(?,?,?,?)");
 		$stm_set_checked = $db->prepare("UPDATE users SET checked_grades_this_iteration=1 WHERE id=?");
 
 		// Удаляются предыдущие записи
-		$stm_clean->bind_param("i", $user_id);
+		$stm_clean->bind_param("ii", $user_id, $period_id);
 		$stm_clean->execute();
 
 		// Заносятся новые
 		foreach ($data as $discipline=>$neg_count) {
-			$stm_add->bind_param("isi", $user_id, $discipline, $neg_count);
+			$stm_add->bind_param("isii", $user_id, $discipline, $neg_count, $period_id);
 			$stm_add->execute();
 		}
 

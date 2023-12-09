@@ -45,9 +45,10 @@ while ($user = $response->fetch_array()) {
 	$need_send_message = false;		// Нужно ли отправлять сообщение
 	$message = "Сводка двоек:\n\n";	// Итоговое сообщение
 	$total_negatives = 0;			// Общее количество двоек
+	$new_discipline_exists = 0;		// Существует ли дисциплина, которой раньше Техбот не видел
 
 	// Прошлые оценки
-	$past_grades = UserModel::getNegativeGradesCount($user['user_id']);
+	$past_grades = UserModel::getNegativeGradesCount($user['user_id'], $user['period_id']);
 
 	// Массив текущих оценок (не ассоциативный)
 	$now_grades_numeric = getGradesData($user['journal_login'], $user['journal_password'], $user['period_id']);
@@ -57,7 +58,7 @@ while ($user = $response->fetch_array()) {
 	foreach ($now_grades_numeric as $item) {
 		$now_grades_assoc[$item[0]] = count_chars($item[1], 0)[50]; // 50 - число 2 в ascii
 	}
-	UserModel::saveNegativeGradesCount($user['user_id'], $now_grades_assoc);
+	UserModel::saveNegativeGradesCount($user['user_id'], $now_grades_assoc, $user['period_id']);
 
 	echo "===Текущие оценки===\n";
 	print_r($now_grades_assoc);
@@ -74,6 +75,8 @@ while ($user = $response->fetch_array()) {
 
 		if (array_key_exists($discipline, $past_grades) == false) {
 			// В прошлом такого предмета не существовало
+			$new_discipline_exists = true;
+			
 			if ($bad_count > 0) {
 				// Количество двоек увеличилось, причём с нуля, так как предмета ещё не было
 				$past_count = 0;
@@ -129,8 +132,5 @@ while ($user = $response->fetch_array()) {
 
 	if ($need_send_message) {
 		Bot::sendMessageVk($user['vk_id'], $message);
-
-		// Количество двоек изменилось и поэтому мы сохраняем новые данные в БД
-		UserModel::saveNegativeGradesCount($user['user_id'], $now_grades_assoc);
 	}
 }
