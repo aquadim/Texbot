@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost:3306
--- Время создания: Дек 01 2023 г., 19:16
+-- Время создания: Дек 10 2023 г., 11:31
 -- Версия сервера: 10.6.12-MariaDB-0ubuntu0.22.04.1
 -- Версия PHP: 8.1.2-1ubuntu2.14
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- База данных: `texbot`
+-- База данных: `texbot_prod`
 --
 
 -- --------------------------------------------------------
@@ -83,7 +83,8 @@ CREATE TABLE `negative_grades` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `discipline` text NOT NULL COMMENT 'Дисциплина',
-  `count` int(11) NOT NULL DEFAULT 0 COMMENT 'Количество двоек по дисциплине'
+  `count` int(11) NOT NULL DEFAULT 0 COMMENT 'Количество двоек по дисциплине',
+  `period_id` int(11) NOT NULL COMMENT 'ID семестра'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Количество двоек для каждого пользователя';
 
 -- --------------------------------------------------------
