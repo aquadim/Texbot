@@ -24,8 +24,6 @@ function getGradesData($login, $password, $period_id) {
 	curl_setopt($grades, CURLOPT_RETURNTRANSFER, 1);
 	$grades_xml = curl_exec($grades);
 
-	file_put_contents("/home/sysadmin/".$login, $grades_xml);
-	
 	$grades_xml = iconv('UTF-8', 'UTF-8//IGNORE', $grades_xml);
 
 	// Разрыв сессии с журналом
