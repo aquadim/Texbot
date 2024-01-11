@@ -155,7 +155,7 @@ class Bot {
 			"message" => $msg,
 			"attachment" => $attachment,
 			"group_id" => $_ENV['public_id'],
-			"message_id" => $msg_id,
+			"conversation_message_id" => $msg_id,
 			"keyboard" => $keyboard,
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
@@ -465,13 +465,13 @@ class Bot {
 			return;
 		}
 		
-		$msg_id = $this->answerSendWait($vid);
+		$this->answerSendWait($vid);
 
 		// Получение данных
 		$grades_data = GradesGetter::getGradesData($login, $password);
 		
 		if ($grades_data === false) {
-			$this->editMessageVk($vid, $msg_id, $this->responses['grades-fail']);
+			$this->sendMessageVk($vid, $this->responses['grades-fail']);
 			return;
 		}
 		$gen = new GradesGenerator($grades_data, 'Твои оценки на '.date('Y-m-d H:i'));
