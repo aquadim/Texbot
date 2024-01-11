@@ -470,7 +470,7 @@ class Bot {
 		// Получение данных
 		$period_id = GroupModel::getPeriodIdByGroupId($user_gid);
 		$grades_data = GradesGetter::getGradesData($login, $password, $period_id);
-		$grades_data = false;
+		
 		if ($grades_data === false) {
 			$this->editMessageVk($vid, $msg_id, $this->responses['grades-fail']);
 			return;
