@@ -50,7 +50,7 @@ for ($y = 1; $y < count($data); $y++) {
 		$group_course = intval(date("Y")) - $values[2];
 	}
 
-	echo "Ищем группу "$group_course.$group_name."... ";
+	echo "Ищем группу ".$group_course.$group_name."... ";
 	$group_info = GroupModel::getByParams($group_course, $group_name);
 	if ($group_info == false) {
 		echo "Неопознанная группа: ".$group_course.$group_name."\n";
