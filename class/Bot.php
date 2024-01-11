@@ -401,7 +401,7 @@ class Bot {
 		// Нет кэшированного изображения, делаем
 		$this->answerEditWait($vid, $msg_id);
 		$data = PairModel::getPairsOfSchedule($response["id"]);
-		$gen = new GroupScheduleGenerator(null, $data, "Расписание группы ".GroupModel::getGroupName($gid).' на '.$date);
+		$gen = new GroupScheduleGenerator($data, "Расписание группы ".GroupModel::getGroupName($gid).' на '.$date);
 		$attachment = $gen->run();
 		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
@@ -421,7 +421,7 @@ class Bot {
 		$this->answerEditWait($vid, $msg_id);
 		$data = PairModel::getPairsOfTeacher($date, $teacher_id);
 		$teacher = TeacherModel::getById($teacher_id);
-		$gen = new TeacherScheduleGenerator(null, $data, "Расписание преподавателя ".$teacher['surname'].' на '.$date);
+		$gen = new TeacherScheduleGenerator($data, "Расписание преподавателя ".$teacher['surname'].' на '.$date);
 		$attachment = $gen->run();
 		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
@@ -444,7 +444,7 @@ class Bot {
 			$this->editMessageVk($vid, $msg_id, $this->responses['cabinet-fail']);
 			return false;
 		}
-		$gen = new OccupancyGenerator(null, $data, "Расписание занятости кабинета ".$cabinet.' на '.$date);
+		$gen = new OccupancyGenerator($data, "Расписание занятости кабинета ".$cabinet.' на '.$date);
 		$attachment = $gen->run();
 		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
 
@@ -468,8 +468,7 @@ class Bot {
 		$msg_id = $this->answerSendWait($vid);
 
 		// Получение данных
-		$period_id = GroupModel::getPeriodIdByGroupId($user_gid);
-		$grades_data = GradesGetter::getGradesData($login, $password, $period_id);
+		$grades_data = GradesGetter::getGradesData($login, $password);
 		
 		if ($grades_data === false) {
 			$this->editMessageVk($vid, $msg_id, $this->responses['grades-fail']);

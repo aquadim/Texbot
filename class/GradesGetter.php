@@ -2,7 +2,7 @@
 class GradesGetter {
 
 	// Возвращает таблицу оценок, совместимую с TableGenerator
-	public static function getGradesData($login, $password, $period_id) {
+	public static function getGradesData($login, $password) {
 		// Создаём разделяемый обработчик
 		$sh = curl_share_init();
 		curl_share_setopt($sh, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE); // Делимся куками
@@ -16,6 +16,26 @@ class GradesGetter {
 		curl_setopt($auth, CURLOPT_ENCODING, 'windows-1251');
 		curl_setopt($auth, CURLOPT_RETURNTRANSFER, 1);
 		curl_exec($auth);
+
+		// Получаем текущий period_id. period_id определяет на какой семестр собираются оценки
+		$welcomepage = curl_init('http://avers.vpmt.ru:8081/region_pou/region.cgi/journal_och?page=1&clear=1');
+		curl_setopt($welcomepage, CURLOPT_COOKIEFILE, "");
+		curl_setopt($welcomepage, CURLOPT_SHARE, $sh);
+		curl_setopt($welcomepage, CURLOPT_ENCODING, 'windows-1251');
+		curl_setopt($welcomepage, CURLOPT_RETURNTRANSFER, 1);
+		$welcomepage_HTML = curl_exec($welcomepage);
+
+		$doc = new DOMDocument();
+		$doc->loadHTML($welcomepage_HTML, LIBXML_NOERROR);
+		$possible_ids = $doc->getElementsByTagName("option");
+
+		if (date("m") > 7) {
+			// Семестр в учебном году первый -- берём по индексу 1 (см. HTML страницы журнала)
+			$period_id = $possible_ids[1]->attributes['value']->value;
+		} else {
+			// Семестр в учебном году последний -- берём по индексу 2
+			$period_id = $possible_ids[2]->attributes['value']->value;
+		}
 
 		// Запрос на экспорт оценок
 		// Заодно выполняется сбор заголовков ответа чтобы определить правильный ли у пользователя логин и пароль

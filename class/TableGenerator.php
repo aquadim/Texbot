@@ -70,7 +70,7 @@ class TableGenerator {
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $photoupload_url);
 		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, ['photo'=>new CURLFile($filename)]);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ['file1'=>new CURLFile($filename)]);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$response_afterupload = curl_exec($ch);
 		$data_afterupload = json_decode($response_afterupload);
