@@ -19,6 +19,10 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__."/..");
 $dotenv->load();
 $db = Database::getConnection();
 
+// Сейчас начало учебного года или конец?
+// true если начало
+$is_starting_semester = date("m") > 7;
+
 // Запрос на проверку существования period_id
 $stm_check_period_id = $db->prepare("SELECT COUNT(*) FROM period_ids WHERE value=?");
 
@@ -35,18 +39,25 @@ for ($y = 1; $y < count($data); $y++) {
 	$stm_check_period_id->execute();
 	$period_id_exists = $stm_check_period_id->get_result()->fetch_array()[0] > 0;
 	if ($period_id_exists) {
+		echo "period_id {$values[7]} существует в БД -- пропуск\n";
 		continue;
 	}
 
 	$group_name = $values[1];
-	$group_course = intval(date("Y")) - $values[2] + 1;
+	if ($is_starting_semester) {
+		$group_course = intval(date("Y")) - $values[2] + 1;
+	} else {
+		$group_course = intval(date("Y")) - $values[2];
+	}
 
+	echo "Ищем группу "$group_course.$group_name."... ";
 	$group_info = GroupModel::getByParams($group_course, $group_name);
 	if ($group_info == false) {
 		echo "Неопознанная группа: ".$group_course.$group_name."\n";
 		continue;
 	}
 	$gid = $group_info['id'];
+	echo "Найдено - id=$gid\n";
 
 	// Определение номера семестра
 	// Если WEEK_NUM1 - 1, то это начало нового учебного года
@@ -59,6 +70,8 @@ for ($y = 1; $y < count($data); $y++) {
 		$period_num = $values[4] * 2;
 	}
 
+	echo "Для этой группы добавляется period_id для семестра #$period_num\n";
+
 	// Добавляем запись о period_id
 	$stm_add_period_id->bind_param("iii", $period_num, $values[7], $gid);
 	$stm_add_period_id->execute();
@@ -68,10 +81,6 @@ for ($y = 1; $y < count($data); $y++) {
 
 // Определение текущего года
 $now_year = date("Y");
-
-// Сейчас начало учебного года или конец?
-// true если начало
-$is_starting_semester = date("m") > 7;
 
 // Запрос выбора всех групп
 $stm_select_all_groups = $db->prepare("SELECT * FROM groups");
