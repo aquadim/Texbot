@@ -9,7 +9,7 @@
 class GradesModel extends Model {
 	protected static $table_name = "grades";
 
-	public static function create(int $user_id, string $photo_str) {
+	public static function create(int $user_id, string $photo_str) : int {
 		$db = Database::getConnection();
 		$stm = $db->prepare("INSERT INTO grades (user_id, photo) VALUES (?, ?)");
 		$stm->bind_param("is", $user_id, $photo_str);

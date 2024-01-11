@@ -4,11 +4,11 @@ define('vk_api_endpoint', "https://api.vk.com/method/");
 
 class Bot {
 
-	private $responses; // Все сообщения бота
-	private $wait_responses; // Сообщения с просьбой подождать
-	private $keyboards; // Клавиатуры
-	private $data; // Данные запроса от ВК
-	private $vid; // ID ВК пользователя по запросу которого выполняется обработка
+	private $responses;			// Все сообщения бота
+	private $wait_responses;	// Сообщения с просьбой подождать
+	private $keyboards;			// Клавиатуры
+	private $data;				// Данные запроса от ВК
+	private $vid;				// ID ВК пользователя по запросу которого выполняется обработка
 
 	public function __construct($input) {
 		$this->responses = array(
@@ -133,7 +133,7 @@ class Bot {
 
 	// Отправка сообщения пользователю ВКонтакте
 	// Возвращает id отправленного сообщения
-	public static function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : void {
+	public static function sendMessageVk($vid, string $msg = null, string $keyboard = null, string $attachment = null) : int {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
@@ -143,8 +143,9 @@ class Bot {
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		$fp = fopen(vk_api_endpoint."messages.send?".http_build_query($params), 'r');
-		fclose($fp);
+		$response = file_get_contents(vk_api_endpoint."messages.send?".http_build_query($params));
+		$data = json_decode($response);
+		return $data->response;
 	}
 
 	// Изменение сообщения
@@ -152,14 +153,14 @@ class Bot {
 		$params = array(
 			"peer_id" => $vid,
 			"message" => $msg,
-			"keyboard" => $keyboard,
 			"attachment" => $attachment,
-			"conversation_message_id" => $msg_id,
+			"group_id" => $_ENV['public_id'],
+			"message_id" => $msg_id,
+			"keyboard" => $keyboard,
 			"access_token" => $_ENV['vk_token'],
 			"v" => "5.131"
 		);
-		$fp = fopen(vk_api_endpoint."messages.edit?".http_build_query($params), 'r');
-		fclose($fp);
+		$response = file_get_contents(vk_api_endpoint."messages.edit?".http_build_query($params));
 	}
 
 	// Возвращает разметку кнопки клавиатуры
@@ -379,8 +380,8 @@ class Bot {
 	}
 
 	// Отправляет сообщение с просьбой подождать
-	private function answerSendWait($vid) : void {
-		$this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
+	private function answerSendWait($vid) : int {
+		return $this->sendMessageVk($vid, $this->wait_responses[array_rand($this->wait_responses)]);
 	}
 
 	// Показ расписания для группы
@@ -456,31 +457,29 @@ class Bot {
 			$this->sendMessageVk($vid, $this->responses['credentials-unknown'], $this->keyboards['enter_journal_credentials']);
 			return;
 		}
-		// Проверяем если пользователь уже получал оценки недавно
-		$response = GradesModel::getRecent($user_id);
-		if ($response) { // Как минимум 10 минут назад были запрошены оценки
-			if ($response['photo'] == null) { // Оценки ещё собираются
-				$this->sendMessageVk($vid, $this->responses['grades-working']);
-			} else {
-				$this->sendMessageVk($vid, null, null, $response['photo']);
-			}
-			return;
-		} else {
-			$this->answerSendWait($vid);
-		}
 
-		$period_id = GroupModel::getPeriodIdByGroupId($user_gid);
-		$data = getGradesData($login, $password, $period_id);
-		if ($data === false) {
-			// TODO: изменять присланное сообщение, а не присылать новое
-			$this->sendMessageVk($vid, $this->responses['grades-fail'], $this->keyboards['enter_journal_credentials']);
+		// Поиск кэшированного изображения
+		$cached = GradesModel::getRecent($user_id);
+		if ($cached) { // Как минимум 10 минут назад были запрошены оценки
+			$this->sendMessageVk($vid, null, null, $cached['photo']);
 			return;
 		}
-		$gen = new GradesGenerator(null, $data, 'Твои оценки на '.date('Y-m-d H:i'));
+		
+		$msg_id = $this->answerSendWait($vid);
+
+		// Получение данных
+		$period_id = GroupModel::getPeriodIdByGroupId($user_gid);
+		$grades_data = GradesGetter::getGradesData($login, $password, $period_id);
+		$grades_data = false;
+		if ($grades_data === false) {
+			$this->editMessageVk($vid, $msg_id, $this->responses['grades-fail']);
+			return;
+		}
+		$gen = new GradesGenerator($grades_data, 'Твои оценки на '.date('Y-m-d H:i'));
 		$attachment = $gen->run();
 		$this->sendMessageVk($vid, null, null, $attachment);
 
-		// Оставляем только часть с photo_id
+		// Создание записи кэша
 		GradesModel::create($user_id, $attachment);
 	}
 

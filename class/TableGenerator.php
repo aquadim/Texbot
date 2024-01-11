@@ -4,12 +4,6 @@
 class TableGenerator {
 	private $filename_base = "table";
 	private $font =  __DIR__.'/../fonts/Lato-Regular.ttf';
-	private $peer_id;
-	/* Если $peer_id == null, то фотографии загружаются как публичные и доступны всем пользователям.
-	 * Иначе у загруженной фотографии будет владелец со значением $peer_id и фотографию сможет просмотреть
-	 * только он (и наверное админ сообщества - не тестировал)
-	 */
-
 	protected $theme = [
 		"body_line_height" => 25,
 		"title_line_height" => 35,
@@ -32,8 +26,7 @@ class TableGenerator {
 	protected $line_size_constraints = [0, 0];
 	protected $title_line_size = 0;
 
-	public function __construct($peer_id, $data, $title) {
-		$this->peer_id = $peer_id;
+	public function __construct($data, $title) {
 		$this->data = $data;
 		$this->title = $title;
 	}
@@ -60,35 +53,39 @@ class TableGenerator {
 	}
 
 	// Загружает изображение на сервер ВКонтакте
+	// Возвращает строку, которую можно использовать как вложение в сообщении
+	// https://dev.vk.com/ru/api/upload/photo-in-message
 	private function uploadImage($filename) : string {
 		// Получаем URL загрузки изображения
-		$params = ['access_token'=>$_ENV['vk_token'], 'peer_id'=>$this->peer_id, 'v'=>'5.131'];
-		$response = file_get_contents(vk_api_endpoint.'/photos.getMessagesUploadServer?'.http_build_query($params));
-		$data = json_decode($response);
-		$photoupload_url = $data->response->upload_url;
-
-		// Выполняем загрузку
-		$ch = curl_init();
-		$data = array('photo'=>new CURLFile($filename));
-		curl_setopt($ch, CURLOPT_URL, $photoupload_url);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$response = curl_exec($ch);
-
-		$response = json_decode($response);
-
-		// Сохраняем изображение в личное сообщение
 		$params = [
 			'access_token'=>$_ENV['vk_token'],
-			'photo'=>$response->photo,
-			'server'=>$response->server,
-			'hash'=>$response->hash,
+			'public_id'=>$_ENV['public_id'],
+			'v'=>'5.131'
+		];
+		$response_upload_server = file_get_contents(vk_api_endpoint.'/photos.getMessagesUploadServer?'.http_build_query($params));
+		$data_upload_server = json_decode($response_upload_server);
+		$photoupload_url = $data_upload_server->response->upload_url;
+
+		// Передача файла
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $photoupload_url);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ['photo'=>new CURLFile($filename)]);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$response_afterupload = curl_exec($ch);
+		$data_afterupload = json_decode($response_afterupload);
+
+		// Сохранение изображения в личном сообщении
+		$params = [
+			'access_token'=>$_ENV['vk_token'],
+			'photo'=>$data_afterupload->photo,
+			'server'=>$data_afterupload->server,
+			'hash'=>$data_afterupload->hash,
 			'v'=>'5.131'
 		];
 
-		$data = json_decode(file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params)));
-		return "photo".$data->response[0]->owner_id.'_'.$data->response[0]->id;
+		$data_aftersave = json_decode(file_get_contents(vk_api_endpoint.'/photos.saveMessagesPhoto?'.http_build_query($params)));
+		return "photo".$data_aftersave->response[0]->owner_id.'_'.$data_aftersave->response[0]->id;
 	}
 
 	// Создаёт поверхность таблицы из данного двумерного массива данных
