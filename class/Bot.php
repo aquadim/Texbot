@@ -28,8 +28,8 @@ class Bot {
 			"enter_password"=> "Введи пароль",
 			"done"=> "Готово!",
 			"returning"=> "Возвращаемся",
-			"get-next-student"=> "Остаётся %s %s до начала пары %s. Начало в %s (%s)",
-			"get-next-teacher"=> "Остаётся %s %s до начала пары %s. Начало в %s с группой %s в %s",
+			"get-next-student"=> "Остаётся %s %s до начала пары %s. Начало в %s (%s) (Расписание может быть неточным!)",
+			"get-next-teacher"=> "Остаётся %s %s до начала пары %s. Начало в %s с группой %s в %s (Расписание может быть неточным!)",
 			"get-next-fail"=> "Не удалось узнать какая пара будет следующей",
 			"select-course"=> "Выбери курс группы",
 			"select-group"=> "Выбери специальность группы",
@@ -394,7 +394,7 @@ class Bot {
 		}
 
 		if ($response['photo'] != null) { // Расписание кэшировано, отправляем сейчас
-			$this->editMessageVk($vid, $msg_id, null, null, $response['photo']);
+			$this->editMessageVk($vid, $msg_id, "Пожалуйста учти что расписание может быть неточным", null, $response['photo']);
 			return;
 		}
 
@@ -403,7 +403,7 @@ class Bot {
 		$data = PairModel::getPairsOfSchedule($response["id"]);
 		$gen = new GroupScheduleGenerator($data, "Расписание группы ".GroupModel::getGroupName($gid).' на '.$date);
 		$attachment = $gen->run();
-		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
+		$this->editMessageVk($vid, $msg_id, "Пожалуйста учти что расписание может быть неточным", null, $attachment);
 
 		ScheduleModel::createCache($response['id'], $attachment);
 	}
@@ -423,7 +423,7 @@ class Bot {
 		$teacher = TeacherModel::getById($teacher_id);
 		$gen = new TeacherScheduleGenerator($data, "Расписание преподавателя ".$teacher['surname'].' на '.$date);
 		$attachment = $gen->run();
-		$this->editMessageVk($vid, $msg_id, null, null, $attachment);
+		$this->editMessageVk($vid, $msg_id, "Пожалуйста учти что расписание может быть неточным", null, $attachment);
 
 		TeacherScheduleModel::create($date, $teacher_id, $attachment);
 	}
